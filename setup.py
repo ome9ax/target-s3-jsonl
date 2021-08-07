@@ -21,8 +21,9 @@ setup(
         'Programming Language :: Python :: 3 :: Only',
     ],
     py_modules=['target_s3_jsonl'],
-    python_requires='==3.8',
+    python_requires='>=3.8',
     install_requires=[
+        'jsonschema==3.2.0',
         'boto3==1.18.16',
     ],
     packages=['target_s3_jsonl'],

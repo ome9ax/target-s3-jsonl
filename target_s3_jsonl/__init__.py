@@ -131,7 +131,7 @@ def persist_lines(messages, config):
                     raise ex
 
             temp_filename = naming_convention_default.format(**{'stream':o['stream'], 'timestamp':now})
-            temp_filename = Path(temp_dir, temp_filename).expanduser()
+            temp_filename = temp_dir / temp_filename
 
             # write temporary file
             if compression == 'gzip':
