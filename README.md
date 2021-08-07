@@ -1,8 +1,8 @@
 # target-s3-jsonl
 
 <!-- [![License: Apache2](https://img.shields.io/badge/License-Apache2-blue.svg)](https://opensource.org/licenses/Apache-2.0) -->
-<!-- ![GitHub](https://img.shields.io/github/license/ome9ax/target-s3-jsonl) -->
-![PyPI - License](https://img.shields.io/pypi/l/target-s3-jsonl)
+<!-- ![PyPI - License](https://img.shields.io/pypi/l/target-s3-jsonl) -->
+![GitHub - License](https://img.shields.io/github/license/ome9ax/target-s3-jsonl)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/target-s3-jsonl.svg)](https://pypi.org/project/target-s3-jsonl/)
 [![Python package builder](https://github.com/ome9ax/target-s3-jsonl/workflows/Python%20package/badge.svg)](https://github.com/ome9ax/target-s3-jsonl)
 [![PyPI version](https://badge.fury.io/py/target-s3-jsonl.svg)](https://badge.fury.io/py/target-s3-jsonl)

@@ -1,6 +1,5 @@
 ignore:
-  - combinatoric/__init__.py
-  - combinatoric/__main__.py
+  - target-s3-jsonl/__init__.py
   - tests/.*
   - ./setup.py
 
