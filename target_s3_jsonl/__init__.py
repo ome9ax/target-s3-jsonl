@@ -115,7 +115,7 @@ def persist_lines(messages, config):
         message_type = o['type']
         if message_type == 'RECORD':
             if 'stream' not in o:
-                raise Exception("Line is missing required key 'stream': {}".format(line))
+                raise Exception("Line is missing required key 'stream': {}".format(message))
             if o['stream'] not in schemas:
                 raise Exception("A record for stream {} was encountered before a corresponding schema".format(o['stream']))
 
@@ -156,7 +156,7 @@ def persist_lines(messages, config):
             state = o['value']
         elif message_type == 'SCHEMA':
             if 'stream' not in o:
-                raise Exception("Line is missing required key 'stream': {}".format(line))
+                raise Exception("Line is missing required key 'stream': {}".format(message))
             stream = o['stream']
             schema = float_to_decimal(o['schema'])
             schemas[stream] = schema
@@ -164,8 +164,6 @@ def persist_lines(messages, config):
             if 'key_properties' not in o:
                 raise Exception("key_properties field is required")
             key_properties[stream] = o['key_properties']
-        elif message_type == 'ACTIVATE_VERSION':
-            logger.debug('ACTIVATE_VERSION message')
         else:
             logger.warning('Unknown message type {} in message {}'.format(o['type'], o))
 

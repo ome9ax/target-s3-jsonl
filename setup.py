@@ -17,8 +17,12 @@ setup(
     keywords=['singer', 'singer.io', 'tap', 'target', 'etl', 'json', 'jsonl', 'aws', 's3'],
     license='Apache License 2.0',
     classifiers=[
+        'Development Status :: 2 - Pre-Alpha',
+        'Intended Audience :: Developers',
+        'Operating System :: OS Independent',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 3 :: Only',
+        'Programming Language :: Python :: 3.8',
     ],
     py_modules=['target_s3_jsonl'],
     python_requires='>=3.8',
