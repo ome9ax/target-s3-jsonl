@@ -2,10 +2,11 @@
 import os
 import backoff
 import boto3
-import singer
 from botocore.exceptions import ClientError
 
-logger = singer.get_logger()
+from target_s3_jsonl.logger import get_logger
+
+logger = get_logger()
 
 
 def retry_pattern():

@@ -4,18 +4,18 @@ import argparse
 import gzip
 import io
 import json
-import os
+from pathlib import Path
 import sys
 import tempfile
 from datetime import datetime
 
-import singer
 from jsonschema import Draft4Validator, FormatChecker
 from decimal import Decimal
 
 from target_s3_jsonl import s3
+from target_s3_jsonl.logger import get_logger
 
-logger = singer.get_logger()
+logger = get_logger()
 
 
 def emit_state(state):
@@ -71,7 +71,7 @@ def upload_files(config, filenames):
                        encryption_key=config.get('encryption_key'))
 
         # Remove the local file(s)
-        os.remove(temp_filename)
+        temp_filename.unlink()
 
 
 def persist_lines(messages, config):
@@ -97,11 +97,11 @@ def persist_lines(messages, config):
         )
 
     # Use the system specific temp directory if no custom temp_dir provided
-    temp_dir = os.path.expanduser(config.get('temp_dir', tempfile.gettempdir()))
+    temp_dir = Path(config.get('temp_dir', tempfile.gettempdir())).expanduser()
 
     # Create temp_dir if not exists
     if temp_dir:
-        os.makedirs(temp_dir, exist_ok=True)
+        temp_dir.mkdir(parents=True, exist_ok=True)
 
     filenames = []
     now = datetime.now().strftime('%Y%m%dT%H%M%S')
@@ -131,7 +131,7 @@ def persist_lines(messages, config):
                     raise ex
 
             temp_filename = naming_convention_default.format(**{'stream':o['stream'], 'timestamp':now})
-            temp_filename = os.path.expanduser(os.path.join(temp_dir, temp_filename))
+            temp_filename = Path(temp_dir, temp_filename).expanduser()
 
             # write temporary file
             if compression == 'gzip':
