@@ -108,7 +108,7 @@ def persist_lines(messages, config):
 
     for message in messages:
         try:
-            o = singer.parse_message(message).asdict()
+            o = json.loads(message)
         except json.decoder.JSONDecodeError:
             logger.error("Unable to parse:\n{}".format(message))
             raise

@@ -21,9 +21,8 @@ setup(
     ],
     py_modules=['target_s3_jsonl'],
     install_requires=[
-        'jsonschema==2.6.0',
-        'singer-python==5.6.1', # NOTE: >5.7.0 broken
-        'boto3==1.18.15',
+        'singer-python==5.12.1',
+        'boto3==1.18.16',
     ],
     packages=['target_s3_jsonl'],
     package_data = {},
