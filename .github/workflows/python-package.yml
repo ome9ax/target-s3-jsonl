@@ -133,7 +133,7 @@ jobs:
         python setup.py sdist bdist_wheel
         # pip install dist/test-package-0.9.x.tar.gz
         ls -l dist
-    - name: Publish package to TestPyPI
+    - name: Publish distribution package to TestPyPI
       if: |
         ${{ matrix.python-version }} == '3.8' \
         && ${{ matrix.os-version }} == 'ubuntu-latest' \
@@ -142,7 +142,7 @@ jobs:
       uses: pypa/gh-action-pypi-publish@master
       with:
         verify_metadata: true
-        skip_existing: true
+        skip_existing: false
         user: __token__
         password: ${{ secrets.TEST_PYPI_TOKEN }}
         repository_url: https://test.pypi.org/legacy/
@@ -157,14 +157,20 @@ jobs:
     #     pip install twine
     #     twine check dist/*
     #     twine upload dist/*
-    # - name: Publish distribution package
-    #   if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-    #   verify_metadata: false
-    #   uses: pypa/gh-action-pypi-publish@master
-    #   with:
-    #     user: __token__
-    #     password: ${{ secrets.test_pypi_password }}
-    # - name: Uninstall Dependencies
-    #   run: |
-    #     . venv/bin/activate
-    #     if [ -f requirements.txt ]; then pip uninstall -y -r requirements.txt; fi
+    - name: Publish distribution package
+      if: |
+        ${{ matrix.python-version }} == '3.8' \
+        && ${{ matrix.os-version }} == 'ubuntu-latest' \
+        && github.event_name == 'push' \
+        && startsWith(github.ref, 'refs/tags')
+      # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        verify_metadata: true
+        skip_existing: false
+        user: __token__
+        password: ${{ secrets.PYPI_TOKEN }}
+    - name: Uninstall Dependencies
+      run: |
+        . venv/bin/activate
+        if [ -f requirements.txt ]; then pip uninstall -y -r requirements.txt; fi
