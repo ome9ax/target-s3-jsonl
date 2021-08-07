@@ -15,21 +15,23 @@ setup(
     author_email='edrdelta.at.gmail.com',
     url='https://github.com/ome9ax/target-s3-jsonl',
     keywords=['singer', 'singer.io', 'tap', 'target', 'etl', 'json', 'jsonl', 'aws', 's3'],
+    license='Apache License 2.0',
     classifiers=[
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 3 :: Only',
     ],
     py_modules=['target_s3_jsonl'],
+    python_requires='==3.8',
     install_requires=[
         'boto3==1.18.16',
     ],
     packages=['target_s3_jsonl'],
+    include_package_data=True,
     package_data = {
         "target_s3_jsonl": [
             "logging.conf"
         ]
     },
-    include_package_data=True,
     entry_points='''
         [console_scripts]
         target-s3-jsonl=target_s3_jsonl:main
