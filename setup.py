@@ -29,6 +29,7 @@ setup(
     install_requires=[
         'jsonschema==3.2.0',
         'boto3==1.18.16',
+        "backoff==1.11.1",
     ],
     packages=['target_s3_jsonl'],
     include_package_data=True,
