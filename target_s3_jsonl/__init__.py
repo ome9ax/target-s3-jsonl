@@ -139,8 +139,8 @@ def persist_lines(messages, config):
                     with gzip.open(output_file, 'wt', encoding='utf-8') as output_data:
                         output_data.writelines(json.dumps(o['record']) + '\n')
             else:
-                with open(temp_filename, 'a', encoding='utf-8') as json_file:
-                    json_file.write(json.dumps(o['record']) + '\n')
+                with open(temp_filename, 'a', encoding='utf-8') as output_file:
+                    output_file.write(json.dumps(o['record']) + '\n')
 
             # queue the file for later s3 upload
             target_key = get_target_key(o,
@@ -162,7 +162,7 @@ def persist_lines(messages, config):
             schemas[stream] = schema
             validators[stream] = Draft4Validator(schema, format_checker=FormatChecker())
             if 'key_properties' not in o:
-                raise Exception("key_properties field is required")
+                raise Exception('key_properties field is required')
             key_properties[stream] = o['key_properties']
         else:
             LOGGER.warning('Unknown message type {} in message {}'.format(o['type'], o))
@@ -181,7 +181,7 @@ def main():
     with open(args.config) as input_json:
         config = json.load(input_json)
 
-    missing_params =  {'s3_bucket'} - set(config.keys())
+    missing_params = {'s3_bucket'} - set(config.keys())
     if missing_params:
         raise Exception('Config is missing required keys: {}'.format(missing_params))
 

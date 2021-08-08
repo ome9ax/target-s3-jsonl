@@ -12,7 +12,7 @@ setup(
     long_description=readme,
     long_description_content_type='text/markdown',
     author='Eddy ∆',
-    author_email='edrdelta.at.gmail.com',
+    author_email='edrdelta@gmail.com',
     url='https://github.com/ome9ax/target-s3-jsonl',
     keywords=['singer', 'singer.io', 'tap', 'target', 'etl', 'json', 'jsonl', 'aws', 's3'],
     license='Apache License 2.0',
