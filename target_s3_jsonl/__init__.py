@@ -15,13 +15,13 @@ from decimal import Decimal
 from target_s3_jsonl import s3
 from target_s3_jsonl.logger import get_logger
 
-logger = get_logger()
+LOGGER = get_logger()
 
 
 def emit_state(state):
     if state is not None:
         line = json.dumps(state)
-        logger.debug('Emitting state {}'.format(line))
+        LOGGER.debug('Emitting state {}'.format(line))
         sys.stdout.write("{}\n".format(line))
         sys.stdout.flush()
 
@@ -110,7 +110,7 @@ def persist_lines(messages, config):
         try:
             o = json.loads(message)
         except json.decoder.JSONDecodeError:
-            logger.error("Unable to parse:\n{}".format(message))
+            LOGGER.error("Unable to parse:\n{}".format(message))
             raise
         message_type = o['type']
         if message_type == 'RECORD':
@@ -124,7 +124,7 @@ def persist_lines(messages, config):
                 validators[o['stream']].validate(float_to_decimal(o['record']))
             except Exception as ex:
                 if type(ex).__name__ == "InvalidOperation":
-                    logger.error("Data validation failed and cannot load to destination. RECORD: {}\n"
+                    LOGGER.error("Data validation failed and cannot load to destination. RECORD: {}\n"
                                  "'multipleOf' validations that allows long precisions are not supported"
                                  " (i.e. with 15 digits or more). Try removing 'multipleOf' methods from JSON schema."
                     .format(o['record']))
@@ -152,7 +152,7 @@ def persist_lines(messages, config):
 
             state = None
         elif message_type == 'STATE':
-            logger.debug('Setting state to {}'.format(o['value']))
+            LOGGER.debug('Setting state to {}'.format(o['value']))
             state = o['value']
         elif message_type == 'SCHEMA':
             if 'stream' not in o:
@@ -165,7 +165,7 @@ def persist_lines(messages, config):
                 raise Exception("key_properties field is required")
             key_properties[stream] = o['key_properties']
         else:
-            logger.warning('Unknown message type {} in message {}'.format(o['type'], o))
+            LOGGER.warning('Unknown message type {} in message {}'.format(o['type'], o))
 
     # Upload created files to S3
     upload_files(config, filenames)
@@ -175,24 +175,21 @@ def persist_lines(messages, config):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', help='Config file')
+    parser.add_argument('-c', '--config', help='Config file', required=True)
     args = parser.parse_args()
 
-    if args.config:
-        with open(args.config) as input_json:
-            config = json.load(input_json)
-    else:
-        config = {}
+    with open(args.config) as input_json:
+        config = json.load(input_json)
 
-    if 's3_bucket' not in config:
-        logger.error("Invalid configuration:\n   * {}".format('s3_bucket'))
-        sys.exit(1)
+    missing_params =  {'s3_bucket'} - set(config.keys())
+    if missing_params:
+        raise Exception('Config is missing required keys: {}'.format(missing_params))
 
     input_messages = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
     state = persist_lines(input_messages, config)
 
     emit_state(state)
-    logger.debug('Exiting normally')
+    LOGGER.debug('Exiting normally')
 
 
 if __name__ == '__main__':

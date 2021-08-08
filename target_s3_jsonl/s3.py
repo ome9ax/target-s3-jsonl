@@ -6,7 +6,7 @@ from botocore.exceptions import ClientError
 
 from target_s3_jsonl.logger import get_logger
 
-logger = get_logger()
+LOGGER = get_logger()
 
 
 def retry_pattern():
@@ -18,12 +18,12 @@ def retry_pattern():
 
 
 def log_backoff_attempt(details):
-    logger.info("Error detected communicating with Amazon, triggering backoff: %d try", details.get("tries"))
+    LOGGER.info("Error detected communicating with Amazon, triggering backoff: %d try", details.get("tries"))
 
 
 @retry_pattern()
 def create_client(config):
-    logger.info("Attempting to create AWS session")
+    LOGGER.info("Attempting to create AWS session")
 
     # Get the required parameters from config file and/or environment variables
     aws_access_key_id = config.get('aws_access_key_id') or os.environ.get('AWS_ACCESS_KEY_ID')
@@ -75,7 +75,7 @@ def upload_file(filename, s3_client, bucket, s3_key,
                 "Expected: 'none' or 'KMS'"
                 .format(encryption_type)
             )
-    logger.info(
+    LOGGER.info(
         "Uploading {} to bucket {} at {}{}"
         .format(filename, bucket, s3_key, encryption_desc)
     )
