@@ -97,81 +97,81 @@ jobs:
         # flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    # - name: Test
-    #   run: |
-    #     # . venv/bin/activate
-    #     pip install pytest-cov
-    #     # pytest tests -v --cov=${{ matrix.project }}
-    #     # pytest tests -v --doctest-modules --junitxml=junit/test-results-${{ matrix.python-version }}.xml --cov=com --cov-report=xml --cov-report=html
-    #     pytest tests -v --cov=${{ matrix.project }} --cov-fail-under 70 --cov-report term --cov-report html:htmlcov --cov-report xml --doctest-modules -o junit_family=xunit2 --junitxml=junit/test-results-${{ matrix.python-version }}.xml
-    # # - name: Test with pytest
-    # #   run: pytest tests.py --doctest-modules --junitxml=junit/test-results-${{ matrix.python-version }}.xml
-    # # - name: Upload pytest test results
-    # #   uses: actions/upload-artifact@v2
-    # #   with:
-    # #     name: pytest-results-${{ matrix.python-version }}
-    # #     path: junit/test-results-${{ matrix.python-version }}.xml
-    # #   # Use always() to always run this step to publish test results when there are test failures
-    # #   if: ${{ always() }}
-    # - name: Upload codecov test results
-    #   uses: codecov/codecov-action@v1
-    #   if: |
-    #     ${{ matrix.python-version }} == '3.8' \
-    #     && ${{ matrix.os-version }} == 'ubuntu-latest'
+    - name: Test
+      run: |
+        # . venv/bin/activate
+        pip install pytest-cov
+        # pytest tests -v --cov=${{ matrix.project }}
+        # pytest tests -v --doctest-modules --junitxml=junit/test-results-${{ matrix.python-version }}.xml --cov=com --cov-report=xml --cov-report=html
+        pytest tests -v --cov=${{ matrix.project }} --cov-fail-under 00 --cov-report term --cov-report html:htmlcov --cov-report xml --doctest-modules -o junit_family=xunit2 --junitxml=junit/test-results-${{ matrix.python-version }}.xml
+    # - name: Test with pytest
+    #   run: pytest tests.py --doctest-modules --junitxml=junit/test-results-${{ matrix.python-version }}.xml
+    # - name: Upload pytest test results
+    #   uses: actions/upload-artifact@v2
     #   with:
-    #     token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
-    #     file: ./coverage.xml # optional
-    #     files: ./coverage1.xml,./coverage2.xml # optional
-    #     flags: unittests # optional
-    #     name: codecov-${{ matrix.project }} # optional
-    #     fail_ci_if_error: true # optional (default = false)
+    #     name: pytest-results-${{ matrix.python-version }}
+    #     path: junit/test-results-${{ matrix.python-version }}.xml
+    #   # Use always() to always run this step to publish test results when there are test failures
+    #   if: ${{ always() }}
+    - name: Upload codecov test results
+      uses: codecov/codecov-action@v1
+      if: |
+        ${{ matrix.python-version }} == '3.8' \
+        && ${{ matrix.os-version }} == 'ubuntu-latest'
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+        file: ./coverage.xml # optional
+        files: ./coverage1.xml,./coverage2.xml # optional
+        flags: unittests # optional
+        name: codecov-${{ matrix.project }} # optional
+        fail_ci_if_error: false # optional (default = false)
 
     - name: Build distribution package
       run: |
         # . venv/bin/activate
         pip install wheel
         python setup.py sdist bdist_wheel
-        # pip install dist/test-package-0.9.x.tar.gz
+        # pip install dist/test-package-0.0.1.tar.gz
         ls -l dist
-    - name: Publish distribution package to TestPyPI
-      if: |
-        ${{ matrix.python-version }} == '3.8' \
-        && ${{ matrix.os-version }} == 'ubuntu-latest' \
-        && github.event_name == 'push' \
-        && startsWith(github.ref, 'refs/tags')
-      uses: pypa/gh-action-pypi-publish@master
-      with:
-        verify_metadata: true
-        skip_existing: true
-        user: __token__
-        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-        repository_url: https://test.pypi.org/legacy/
+    # - name: Publish distribution package to TestPyPI
+    #   if: |
+    #     ${{ matrix.python-version }} == '3.8' \
+    #     && ${{ matrix.os-version }} == 'ubuntu-latest' \
+    #     && github.event_name == 'push' \
+    #     && startsWith(github.ref, 'refs/tags')
+    #   uses: pypa/gh-action-pypi-publish@master
+    #   with:
+    #     verify_metadata: true
+    #     skip_existing: true
+    #     user: __token__
+    #     password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+    #     repository_url: https://test.pypi.org/legacy/
 
+    # # - name: Publish distribution package
+    # #   env:
+    # #     TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+    # #     TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+    # #   run: |
+    # #     # python setup.py sdist bdist_wheel
+    # #     # Publish after build
+    # #     pip install twine
+    # #     twine check dist/*
+    # #     twine upload dist/*
     # - name: Publish distribution package
-    #   env:
-    #     TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-    #     TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+    #   if: |
+    #     ${{ matrix.python-version }} == '3.8' \
+    #     && ${{ matrix.os-version }} == 'ubuntu-latest' \
+    #     && github.event_name == 'push' \
+    #     && github.ref == 'refs/heads/main' \
+    #     && startsWith(github.ref, 'refs/tags')
+    #   # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    #   uses: pypa/gh-action-pypi-publish@master
+    #   with:
+    #     verify_metadata: true
+    #     skip_existing: true
+    #     user: __token__
+    #     password: ${{ secrets.PYPI_API_TOKEN }}
+    # - name: Uninstall Dependencies
     #   run: |
-    #     # python setup.py sdist bdist_wheel
-    #     # Publish after build
-    #     pip install twine
-    #     twine check dist/*
-    #     twine upload dist/*
-    - name: Publish distribution package
-      if: |
-        ${{ matrix.python-version }} == '3.8' \
-        && ${{ matrix.os-version }} == 'ubuntu-latest' \
-        && github.event_name == 'push' \
-        && github.ref == 'refs/heads/main' \
-        && startsWith(github.ref, 'refs/tags')
-      # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-      uses: pypa/gh-action-pypi-publish@master
-      with:
-        verify_metadata: true
-        skip_existing: true
-        user: __token__
-        password: ${{ secrets.PYPI_API_TOKEN }}
-    - name: Uninstall Dependencies
-      run: |
-        . venv/bin/activate
-        if [ -f requirements.txt ]; then pip uninstall -y -r requirements.txt; fi
+    #     . venv/bin/activate
+    #     if [ -f requirements.txt ]; then pip uninstall -y -r requirements.txt; fi

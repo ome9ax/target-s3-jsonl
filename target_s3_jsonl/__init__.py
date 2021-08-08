@@ -4,24 +4,24 @@ import argparse
 import gzip
 import io
 import json
-import os
+from pathlib import Path
 import sys
 import tempfile
 from datetime import datetime
 
-import singer
 from jsonschema import Draft4Validator, FormatChecker
 from decimal import Decimal
 
 from target_s3_jsonl import s3
+from target_s3_jsonl.logger import get_logger
 
-logger = singer.get_logger()
+LOGGER = get_logger()
 
 
 def emit_state(state):
     if state is not None:
         line = json.dumps(state)
-        logger.debug('Emitting state {}'.format(line))
+        LOGGER.debug('Emitting state {}'.format(line))
         sys.stdout.write("{}\n".format(line))
         sys.stdout.flush()
 
@@ -38,7 +38,7 @@ def float_to_decimal(value):
     return value
 
 
-def get_target_key(message, prefix=None, timestamp=None, naming_convention=None):
+def get_target_key(message, naming_convention=None, timestamp=None, prefix=None):
     """Creates and returns an S3 key for the message"""
     if not naming_convention:
         naming_convention = '{stream}-{timestamp}.jsonl'
@@ -71,7 +71,7 @@ def upload_files(config, filenames):
                        encryption_key=config.get('encryption_key'))
 
         # Remove the local file(s)
-        os.remove(temp_filename)
+        temp_filename.unlink()
 
 
 def persist_lines(messages, config):
@@ -97,11 +97,11 @@ def persist_lines(messages, config):
         )
 
     # Use the system specific temp directory if no custom temp_dir provided
-    temp_dir = os.path.expanduser(config.get('temp_dir', tempfile.gettempdir()))
+    temp_dir = Path(config.get('temp_dir', tempfile.gettempdir())).expanduser()
 
     # Create temp_dir if not exists
     if temp_dir:
-        os.makedirs(temp_dir, exist_ok=True)
+        temp_dir.mkdir(parents=True, exist_ok=True)
 
     filenames = []
     now = datetime.now().strftime('%Y%m%dT%H%M%S')
@@ -110,12 +110,12 @@ def persist_lines(messages, config):
         try:
             o = json.loads(message)
         except json.decoder.JSONDecodeError:
-            logger.error("Unable to parse:\n{}".format(message))
+            LOGGER.error("Unable to parse:\n{}".format(message))
             raise
         message_type = o['type']
         if message_type == 'RECORD':
             if 'stream' not in o:
-                raise Exception("Line is missing required key 'stream': {}".format(line))
+                raise Exception("Line is missing required key 'stream': {}".format(message))
             if o['stream'] not in schemas:
                 raise Exception("A record for stream {} was encountered before a corresponding schema".format(o['stream']))
 
@@ -124,14 +124,14 @@ def persist_lines(messages, config):
                 validators[o['stream']].validate(float_to_decimal(o['record']))
             except Exception as ex:
                 if type(ex).__name__ == "InvalidOperation":
-                    logger.error("Data validation failed and cannot load to destination. RECORD: {}\n"
+                    LOGGER.error("Data validation failed and cannot load to destination. RECORD: {}\n"
                                  "'multipleOf' validations that allows long precisions are not supported"
                                  " (i.e. with 15 digits or more). Try removing 'multipleOf' methods from JSON schema."
                     .format(o['record']))
                     raise ex
 
             temp_filename = naming_convention_default.format(**{'stream':o['stream'], 'timestamp':now})
-            temp_filename = os.path.expanduser(os.path.join(temp_dir, temp_filename))
+            temp_filename = temp_dir / temp_filename
 
             # write temporary file
             if compression == 'gzip':
@@ -152,11 +152,11 @@ def persist_lines(messages, config):
 
             state = None
         elif message_type == 'STATE':
-            logger.debug('Setting state to {}'.format(o['value']))
+            LOGGER.debug('Setting state to {}'.format(o['value']))
             state = o['value']
         elif message_type == 'SCHEMA':
             if 'stream' not in o:
-                raise Exception("Line is missing required key 'stream': {}".format(line))
+                raise Exception("Line is missing required key 'stream': {}".format(message))
             stream = o['stream']
             schema = float_to_decimal(o['schema'])
             schemas[stream] = schema
@@ -164,10 +164,8 @@ def persist_lines(messages, config):
             if 'key_properties' not in o:
                 raise Exception("key_properties field is required")
             key_properties[stream] = o['key_properties']
-        elif message_type == 'ACTIVATE_VERSION':
-            logger.debug('ACTIVATE_VERSION message')
         else:
-            logger.warning('Unknown message type {} in message {}'.format(o['type'], o))
+            LOGGER.warning('Unknown message type {} in message {}'.format(o['type'], o))
 
     # Upload created files to S3
     upload_files(config, filenames)
@@ -177,24 +175,21 @@ def persist_lines(messages, config):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', help='Config file')
+    parser.add_argument('-c', '--config', help='Config file', required=True)
     args = parser.parse_args()
 
-    if args.config:
-        with open(args.config) as input_json:
-            config = json.load(input_json)
-    else:
-        config = {}
+    with open(args.config) as input_json:
+        config = json.load(input_json)
 
-    if 's3_bucket' not in config:
-        logger.error("Invalid configuration:\n   * {}".format('s3_bucket'))
-        sys.exit(1)
+    missing_params =  {'s3_bucket'} - set(config.keys())
+    if missing_params:
+        raise Exception('Config is missing required keys: {}'.format(missing_params))
 
     input_messages = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
     state = persist_lines(input_messages, config)
 
     emit_state(state)
-    logger.debug('Exiting normally')
+    LOGGER.debug('Exiting normally')
 
 
 if __name__ == '__main__':

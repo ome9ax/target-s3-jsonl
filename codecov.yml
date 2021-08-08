@@ -1,0 +1,26 @@
+ignore:
+  - target-s3-jsonl/__init__.py
+  - tests/.*
+  - ./setup.py
+
+# codecov:
+#   require_ci_to_pass: no
+
+# coverage:
+#   precision: 2
+#   round: down
+#   range: '70...100'
+# coverage:
+#   status:
+#     project:
+#       default:
+#         target: auto
+#         # threshold: 0.3%
+#         threshold: 70%
+#         base: auto
+#     patch:
+#       default:
+#         target: auto
+#         # threshold: 1%
+#         threshold: 80%
+#         base: auto

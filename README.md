@@ -1,8 +1,14 @@
 # target-s3-jsonl
 
-[![PyPI version](https://badge.fury.io/py/target-s3-jsonl.svg)](https://badge.fury.io/py/target-s3-jsonl)
+<!-- [![License: Apache2](https://img.shields.io/badge/License-Apache2-blue.svg)](https://opensource.org/licenses/Apache-2.0) -->
+<!-- ![PyPI - License](https://img.shields.io/pypi/l/target-s3-jsonl) -->
+![GitHub - License](https://img.shields.io/github/license/ome9ax/target-s3-jsonl)
+[![Python package builder](https://github.com/ome9ax/target-s3-jsonl/workflows/Python%20package/badge.svg)](https://github.com/ome9ax/target-s3-jsonl)
+[![codecov](https://codecov.io/gh/ome9ax/target-s3-jsonl/branch/main/graph/badge.svg?token=KV0cn4jKs2)](https://codecov.io/gh/ome9ax/target-s3-jsonl)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/target-s3-jsonl.svg)](https://pypi.org/project/target-s3-jsonl/)
-[![License: Apache2](https://img.shields.io/badge/License-Apache2-yellow.svg)](https://opensource.org/licenses/Apache-2.0)
+[![PyPI version](https://badge.fury.io/py/target-s3-jsonl.svg)](https://badge.fury.io/py/target-s3-jsonl)
+[![PyPi project installs](https://img.shields.io/pypi/dm/target-s3-jsonl.svg?maxAge=2592000&label=installs&color=%2327B1FF)](https://pypi.org/project/target-s3-jsonl)
+<!-- [![PyPi project version](https://img.shields.io/pypi/v/target-s3-jsonl.svg)](https://pypi.org/project/target-s3-jsonl) -->
 
 [Singer](https://www.singer.io/) target that uploads loads data to S3 in JSONL format
 following the [Singer spec](https://github.com/singer-io/getting-started/blob/master/docs/SPEC.md).
