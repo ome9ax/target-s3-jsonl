@@ -113,11 +113,11 @@ jobs:
     #     path: junit/test-results-${{ matrix.python-version }}.xml
     #   # Use always() to always run this step to publish test results when there are test failures
     #   if: ${{ always() }}
-    - name: Generate coverage report
-      run: |
-        coverage run -m pytest
-        coverage xml
-        coverage html
+    # - name: Generate coverage report
+    #   run: |
+    #     coverage run -m pytest
+    #     coverage xml
+    #     coverage html
     - name: Upload coverage test results to Codecov
       uses: codecov/codecov-action@v2
       if: |
@@ -125,14 +125,11 @@ jobs:
         && ${{ matrix.os-version }} == 'ubuntu-latest'
       with:
         token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
-        # directory: ./coverage/reports/
-        # file: ./coverage.xml # optional
-        # files: ./coverage1.xml,./coverage2.xml # optional
         flags: unittests # optional
         name: codecov-${{ matrix.project }} # optional
         env_vars: OS,PYTHON
         fail_ci_if_error: false # optional (default = false)
-        verbose: true # optional (default = false)
+        verbose: false # optional (default = false)
 
     - name: Build distribution package
       run: |
