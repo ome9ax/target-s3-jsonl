@@ -38,7 +38,7 @@ def float_to_decimal(value):
     return value
 
 
-def get_target_key(message, prefix=None, timestamp=None, naming_convention=None):
+def get_target_key(message, naming_convention=None, timestamp=None, prefix=None):
     """Creates and returns an S3 key for the message"""
     if not naming_convention:
         naming_convention = '{stream}-{timestamp}.jsonl'
