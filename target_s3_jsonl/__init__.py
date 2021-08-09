@@ -44,15 +44,15 @@ def get_target_key(message, naming_convention=None, timestamp=None, prefix=None)
         naming_convention = '{stream}-{timestamp}.jsonl'
 
     # replace simple tokens
-    key = naming_convention.format(**{
-        'stream': message['stream'],
-        'timestamp': timestamp if timestamp else datetime.now().strftime('%Y%m%dT%H%M%S'),
-        'date': datetime.now().strftime('%Y%m%d'),
-        'time': datetime.now().strftime('%H%M%S')
-    })
+    key = naming_convention.format(
+        stream=message['stream'],
+        timestamp=timestamp if timestamp is not None else datetime.now().strftime('%Y%m%dT%H%M%S'),
+        date=datetime.now().strftime('%Y%m%d'),
+        time=datetime.now().strftime('%H%M%S')
+    )
 
     # replace dynamic tokens
-    # todo: replace dynamic tokens such as {date(<format>)} with the date formatted as requested in <format>
+    # TODO: replace dynamic tokens such as {date(<format>)} with the date formatted as requested in <format>
 
     if prefix:
         filename = key.split('/')[-1]
@@ -63,12 +63,13 @@ def get_target_key(message, naming_convention=None, timestamp=None, prefix=None)
 def upload_files(config, filenames):
     s3_client = s3.create_client(config)
     for temp_filename, target_key in filenames:
-        s3.upload_file(temp_filename,
+        s3.upload_file(str(temp_filename),
                        s3_client,
                        config.get('s3_bucket'),
                        target_key,
                        encryption_type=config.get('encryption_type'),
                        encryption_key=config.get('encryption_key'))
+        LOGGER.info("File {} uploaded to {}".format(target_key, config.get('s3_bucket')))
 
         # Remove the local file(s)
         temp_filename.unlink()
@@ -130,10 +131,11 @@ def persist_lines(messages, config):
                     .format(o['record']))
                     raise ex
 
-            temp_filename = naming_convention_default.format(**{'stream':o['stream'], 'timestamp':now})
+            temp_filename = naming_convention_default.format(stream=o['stream'], timestamp=now)
             temp_filename = temp_dir / temp_filename
 
             # write temporary file
+            # TODO: bufferise 16Mb file_bytes = sys.getsizeof(message) > 16_000_000
             if compression == 'gzip':
                 with open(temp_filename, 'ab') as output_file:
                     with gzip.open(output_file, 'wt', encoding='utf-8') as output_data:
