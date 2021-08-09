@@ -7,7 +7,7 @@ with open('README.md', 'r', encoding='utf-8') as f:
 
 setup(
     name='target-s3-jsonl',
-    version='0.0.0',
+    version='0.0.4',
     description='Singer.io target for writing JSON Line files and upload to S3',
     long_description=readme,
     long_description_content_type='text/markdown',
