@@ -6,7 +6,7 @@ name: Python package
 on:
   push:
     branches:
-    tags: [ * ]
+    tags:
   # pull_request:
   #   branches: [ main ]
   release:
