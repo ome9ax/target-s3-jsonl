@@ -12,7 +12,7 @@ from target_s3_jsonl import get_target_key, persist_lines
 with open(Path('tests', 'resources', 'config.json'), 'r', encoding='utf-8') as config_file, \
     open(Path('tests', 'resources', 'messages-with-three-streams.json'), 'r', encoding='utf-8') as input_file, \
     open(Path('tests', 'resources', 'invalid-json.json'), 'r', encoding='utf-8') as invalid_row_file, \
-    open(Path('tests', 'resources', 'invalid-message-order.json'), 'r', encoding='utf-8') as invalid_order_file:
+        open(Path('tests', 'resources', 'invalid-message-order.json'), 'r', encoding='utf-8') as invalid_order_file:
     CONFIG = config_file.read()
     INPUT_DATA = input_file.read()
     INVALID_ROW_DATA = invalid_row_file.read()
