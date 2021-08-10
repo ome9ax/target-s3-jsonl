@@ -71,7 +71,7 @@ jobs:
         python -m venv venv || virtualenv venv
         . venv/bin/activate
         pip install --upgrade pip # setuptools
-        pip install .[test,lint]
+        pip install .[test,lint,dist]
         # pip install -r requirements.txt
     # - name: Install integration Python dependencies
     #   run: |
@@ -93,18 +93,19 @@ jobs:
     - name: Dry Lint with flake8
       run: |
         . venv/bin/activate
-        pip install flake8
+        # pip install flake8
         # stop the build if there are Python syntax errors or undefined names
         # flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 255 chars wide
-        flake8 . --extend-exclude venv --count --exit-zero --max-complexity=10 --max-line-length=255 --statistics --ignore E731,E402,W503,E203,F401,F821
+        # flake8 . --extend-exclude venv --count --exit-zero --statistics
+        flake8
     - name: Test
       run: |
         . venv/bin/activate
-        pip install pytest-cov
+        # pip install pytest-cov
         # pytest tests -v --cov=${{ matrix.project }}
         # pytest tests -v --doctest-modules -o junit_family=xunit2 --junitxml=junit/test-results-${{ matrix.python-version }}.xml --cov=com --cov-report=xml --cov-report=html
-        pytest tests
+        pytest
     # - name: Test with pytest
     #   run: pytest tests.py --doctest-modules --junitxml=junit/test-results-${{ matrix.python-version }}.xml
     # - name: Upload pytest test results
@@ -139,7 +140,7 @@ jobs:
     - name: Build distribution package
       run: |
         . venv/bin/activate
-        pip install wheel
+        # pip install wheel
         python setup.py sdist bdist_wheel
         # pip install dist/test-package-0.0.1.tar.gz
         ls -l dist
