@@ -89,6 +89,13 @@ Full list of options in `config.json`:
 | naming_convention                   | String  | No         | (Default: None) Custom naming convention of the s3 key. Replaces tokens `date`, `stream`, and `timestamp` with the appropriate values. <br><br>Supports "folders" in s3 keys e.g. `folder/folder2/{stream}/export_date={date}/{timestamp}.jsonl`. <br><br>Honors the `s3_key_prefix`,  if set, by prepending the "filename". E.g. naming_convention = `folder1/my_file.jsonl` and s3_key_prefix = `prefix_` results in `folder1/prefix_my_file.jsonl` |
 | temp_dir                            | String  |            | (Default: platform-dependent) Directory of temporary JSONL files with RECORD messages. |
 
+## Test
+Run pytest
+
+```bash
+python -m pytest -p no:cacheprovider tests
+```
+
 ## License
 
 Apache License Version 2.0

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+__version__ = '0.0.4'
+
 import argparse
 import gzip, lzma
 import io
@@ -157,6 +159,9 @@ def persist_lines(messages, config, buffer_size=64e6):
                 save_file(file_data[stream], compression)
 
             state = None
+        elif message_type == 'STATE':
+            LOGGER.debug('Setting state to {}'.format(o['value']))
+            state = o['value']
         elif message_type == 'SCHEMA':
             if 'stream' not in o:
                 raise Exception("Line is missing required key 'stream': {}".format(message))
@@ -180,9 +185,6 @@ def persist_lines(messages, config, buffer_size=64e6):
                     'file_name': temp_dir / naming_convention_default.format(stream=stream, timestamp=now),
                     'file_data': []}
 
-        elif message_type == 'STATE':
-            LOGGER.debug('Setting state to {}'.format(o['value']))
-            state = o['value']
         elif message_type == 'ACTIVATE_VERSION':
             LOGGER.debug('ACTIVATE_VERSION {}'.format(message))
         else:
