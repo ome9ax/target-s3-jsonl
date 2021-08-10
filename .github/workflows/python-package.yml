@@ -103,7 +103,8 @@ jobs:
         pip install pytest-cov
         # pytest tests -v --cov=${{ matrix.project }}
         # pytest tests -v --doctest-modules --junitxml=junit/test-results-${{ matrix.python-version }}.xml --cov=com --cov-report=xml --cov-report=html
-        pytest tests -v --cov=${{ matrix.project }} --cov-fail-under 00 --cov-report term --cov-report html:htmlcov --cov-report xml --doctest-modules -o junit_family=xunit2 --junitxml=junit/test-results-${{ matrix.python-version }}.xml
+        pytest tests -v --cov=${{ matrix.project }} --cov-fail-under 10 --cov-report term --cov-report html:htmlcov --cov-report xml --doctest-modules -o junit_family=xunit2 --junitxml=junit/test-results-${{ matrix.python-version }}.xml
+        ls
     # - name: Test with pytest
     #   run: pytest tests.py --doctest-modules --junitxml=junit/test-results-${{ matrix.python-version }}.xml
     # - name: Upload pytest test results
@@ -113,11 +114,11 @@ jobs:
     #     path: junit/test-results-${{ matrix.python-version }}.xml
     #   # Use always() to always run this step to publish test results when there are test failures
     #   if: ${{ always() }}
-    - name: Generate coverage report
-      run: |
-        coverage run -m pytest
-        coverage xml
-        coverage html
+    # - name: Generate coverage report
+    #   run: |
+    #     coverage run -m pytest
+    #     coverage xml
+    #     coverage html
     - name: Upload coverage test results to Codecov
       uses: codecov/codecov-action@v2
       if: |
@@ -125,6 +126,8 @@ jobs:
         && ${{ matrix.os-version }} == 'ubuntu-latest'
       with:
         token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+        file: cov.xml # optional
+        files: coverage.xml,coverage1.xml,coverage2.xml # optional
         flags: unittests # optional
         name: codecov-${{ matrix.project }} # optional
         env_vars: OS,PYTHON

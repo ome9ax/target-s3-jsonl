@@ -29,7 +29,11 @@ setup(
     install_requires=[
         'jsonschema==3.2.0',
         'boto3==1.18.16',
-        "backoff==1.11.1",
+        'backoff==1.11.1',
+    ],
+    extra_requires=[
+        'pytest-cov==2.12.1',
+        'flake8==3.9.2',
     ],
     packages=['target_s3_jsonl'],
     include_package_data=True,
