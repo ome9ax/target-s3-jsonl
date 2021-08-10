@@ -27,18 +27,20 @@ installation instructions for [Mac](http://docs.python-guide.org/en/latest/start
 
 It's recommended to use a virtualenv:
 
+### Defaults
 ```bash
-python3 -m venv venv
+python -m venv venv
+. venv/bin/activate
+pip install --upgrade pip
 pip install target-s3-jsonl
 ```
 
-or
-
+### Isolated virtual environment
 ```bash
-python3 -m venv venv
-. venv/bin/activate
-pip install --upgrade pip
-pip install .
+python -m venv ~/.virtualenvs/target-s3-jsonl
+source ~/.virtualenvs/target-s3-jsonl/bin/activate
+pip install target-s3-jsonl
+deactivate
 ```
 
 ### To run
@@ -55,11 +57,11 @@ It's reading incoming messages from STDIN and using the properites in `config.js
 
 Running the the target connector requires a `config.json` file. An example with the minimal settings:
 
-   ```json
-   {
-     "s3_bucket": "my_bucket"
-   }
-   ```
+```json
+{
+    "s3_bucket": "my_bucket"
+}
+```
 
 ### Profile based authentication
 
@@ -90,5 +92,3 @@ Full list of options in `config.json`:
 ## License
 
 Apache License Version 2.0
-
-See [LICENSE](LICENSE) to see the full text.

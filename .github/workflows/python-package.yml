@@ -23,7 +23,7 @@ jobs:
         # os: [ubuntu-latest, macos-latest, windows-latest]
         # python-version: [3.8, pypy3]
         # python-version: [3.8, 3.9]
-        python-version: [3.8]
+        python-version: [3.8, 3.9]
         # exclude:
         #   - os: macos-latest
         #     python-version: 3.8
@@ -70,7 +70,7 @@ jobs:
       run: |
         python -m venv venv || virtualenv venv
         . venv/bin/activate
-        python -m pip install --upgrade pip # setuptools
+        pip install --upgrade pip # setuptools
         pip install -r requirements.txt
     # - name: Install integration Python dependencies
     #   run: |
@@ -95,8 +95,8 @@ jobs:
         pip install flake8
         # stop the build if there are Python syntax errors or undefined names
         # flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 255 chars wide
+        flake8 . --extend-exclude venv --count --exit-zero --max-complexity=10 --max-line-length=255 --statistics --ignore E731,E402,W503,E203,F401,F821
     - name: Test
       run: |
         . venv/bin/activate
@@ -113,11 +113,11 @@ jobs:
     #     path: junit/test-results-${{ matrix.python-version }}.xml
     #   # Use always() to always run this step to publish test results when there are test failures
     #   if: ${{ always() }}
-    # - name: Generate coverage report
-    #   run: |
-    #     coverage run -m pytest
-    #     coverage xml
-    #     coverage html
+    - name: Generate coverage report
+      run: |
+        coverage run -m pytest
+        coverage xml
+        coverage html
     - name: Upload coverage test results to Codecov
       uses: codecov/codecov-action@v2
       if: |

@@ -48,8 +48,7 @@ def get_target_key(message, naming_convention=None, timestamp=None, prefix=None)
         stream=message['stream'],
         timestamp=timestamp if timestamp is not None else datetime.now().strftime('%Y%m%dT%H%M%S'),
         date=datetime.now().strftime('%Y%m%d'),
-        time=datetime.now().strftime('%H%M%S')
-    )
+        time=datetime.now().strftime('%H%M%S'))
 
     # NOTE: Replace dynamic tokens
     # TODO: replace dynamic tokens such as {date(<format>)} with the date formatted as requested in <format>
@@ -61,12 +60,13 @@ def upload_files(config, file_data):
     s3_client = s3.create_client(config)
     for stream, file_info in file_data.items():
         if file_info['file_name'].exists():
-            s3.upload_file(str(file_info['file_name']),
-                        s3_client,
-                        config.get('s3_bucket'),
-                        file_info['target_key'],
-                        encryption_type=config.get('encryption_type'),
-                        encryption_key=config.get('encryption_key'))
+            s3.upload_file(
+                str(file_info['file_name']),
+                s3_client,
+                config.get('s3_bucket'),
+                file_info['target_key'],
+                encryption_type=config.get('encryption_type'),
+                encryption_key=config.get('encryption_key'))
             LOGGER.debug("{} file {} uploaded to {}".format(stream, file_info['target_key'], config.get('s3_bucket')))
 
             # NOTE: Remove the local file(s)
@@ -89,14 +89,14 @@ def save_file(file_data, compression):
 
 
 # NOTE: 64Mb default buffer
-def persist_lines(messages, config, buffer_size = 64e6):
+def persist_lines(messages, config, buffer_size=64e6):
     state = None
     schemas = {}
     key_properties = {}
     validators = {}
 
     naming_convention_default = '{stream}-{timestamp}.jsonl'
-    naming_convention = config.get('naming_convention') if config.get('naming_convention') is not None else naming_convention_default
+    naming_convention = config.get('naming_convention') or naming_convention_default
     compression = None
 
     if f"{config.get('compression')}".lower() == 'gzip':
@@ -113,8 +113,7 @@ def persist_lines(messages, config, buffer_size = 64e6):
         raise NotImplementedError(
             "Compression type '{}' is not supported. "
             "Expected: 'none', 'gzip', or 'lzma'"
-            .format(f"{config.get('compression')}".lower())
-        )
+            .format(f"{config.get('compression')}".lower()))
 
     # NOTE: Use the system specific temp directory if no custom temp_dir provided
     temp_dir = Path(config.get('temp_dir', tempfile.gettempdir())).expanduser()
@@ -144,10 +143,11 @@ def persist_lines(messages, config, buffer_size = 64e6):
                 validators[stream].validate(float_to_decimal(o['record']))
             except Exception as ex:
                 if type(ex).__name__ == "InvalidOperation":
-                    LOGGER.error("Data validation failed and cannot load to destination. RECORD: {}\n"
-                                 "'multipleOf' validations that allows long precisions are not supported"
-                                 " (i.e. with 15 digits or more). Try removing 'multipleOf' methods from JSON schema."
-                    .format(o['record']))
+                    LOGGER.error(
+                        "Data validation failed and cannot load to destination. RECORD: {}\n"
+                        "'multipleOf' validations that allows long precisions are not supported"
+                        " (i.e. with 15 digits or more). Try removing 'multipleOf' methods from JSON schema."
+                        .format(o['record']))
                     raise ex
 
             file_data[stream]['file_data'].append(json.dumps(o['record']) + '\n')
@@ -172,7 +172,8 @@ def persist_lines(messages, config, buffer_size = 64e6):
             # NOTE: get the s3 file key
             if stream not in file_data:
                 file_data[stream] = {
-                    'target_key': get_target_key(o,
+                    'target_key': get_target_key(
+                        o,
                         naming_convention=naming_convention,
                         timestamp=now,
                         prefix=config.get('s3_key_prefix', '')),
