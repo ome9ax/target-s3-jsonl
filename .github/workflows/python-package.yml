@@ -103,8 +103,7 @@ jobs:
         pip install pytest-cov
         # pytest tests -v --cov=${{ matrix.project }}
         # pytest tests -v --doctest-modules -o junit_family=xunit2 --junitxml=junit/test-results-${{ matrix.python-version }}.xml --cov=com --cov-report=xml --cov-report=html
-        pytest tests -v --cov=target_s3_jsonl --cov-append --cov-fail-under 00 --cov-report annotate --cov-report xml --cov-report term --cov-report html:htmlcov --doctest-modules
-        ls -al . .coverage
+        pytest tests -v
     # - name: Test with pytest
     #   run: pytest tests.py --doctest-modules --junitxml=junit/test-results-${{ matrix.python-version }}.xml
     # - name: Upload pytest test results
@@ -126,8 +125,8 @@ jobs:
         && ${{ matrix.os-version }} == 'ubuntu-latest'
       with:
         token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
-        file: coverage.xml # optional
-        files: coverage1.xml,coverage2.xml # optional
+        # file: coverage.xml # optional
+        # files: coverage1.xml,coverage2.xml # optional
         flags: unittests # optional
         name: codecov-${{ matrix.project }} # optional
         env_vars: OS,PYTHON
