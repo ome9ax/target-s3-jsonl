@@ -3,7 +3,8 @@
 __version__ = '0.0.4'
 
 import argparse
-import gzip, lzma
+import gzip
+import lzma
 import io
 import json
 from pathlib import Path

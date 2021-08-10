@@ -25,17 +25,20 @@ def config():
 
     return CONFIG
 
+
 @fixture
 def input_data():
     '''Use custom parameters set'''
 
     return INPUT_DATA
 
+
 @fixture
 def invalid_row_data():
     '''Use custom parameters set'''
 
     return INVALID_ROW_DATA
+
 
 @fixture
 def invalid_order_data():

@@ -103,7 +103,7 @@ jobs:
         pip install pytest-cov
         # pytest tests -v --cov=${{ matrix.project }}
         # pytest tests -v --doctest-modules -o junit_family=xunit2 --junitxml=junit/test-results-${{ matrix.python-version }}.xml --cov=com --cov-report=xml --cov-report=html
-        python -m pytest tests
+        pytest tests
     # - name: Test with pytest
     #   run: pytest tests.py --doctest-modules --junitxml=junit/test-results-${{ matrix.python-version }}.xml
     # - name: Upload pytest test results
