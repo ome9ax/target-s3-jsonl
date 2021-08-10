@@ -104,7 +104,7 @@ jobs:
         # pytest tests -v --cov=${{ matrix.project }}
         # pytest tests -v --doctest-modules --junitxml=junit/test-results-${{ matrix.python-version }}.xml --cov=com --cov-report=xml --cov-report=html
         pytest tests -v --cov=${{ matrix.project }} --cov-fail-under 00 --cov-report term --cov-report html:htmlcov --cov-report xml --doctest-modules -o junit_family=xunit2 --junitxml=junit/test-results-${{ matrix.python-version }}.xml
-        ls
+        ls -a
     # - name: Test with pytest
     #   run: pytest tests.py --doctest-modules --junitxml=junit/test-results-${{ matrix.python-version }}.xml
     # - name: Upload pytest test results
