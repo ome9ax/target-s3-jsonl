@@ -102,9 +102,9 @@ jobs:
         # . venv/bin/activate
         pip install pytest-cov
         # pytest tests -v --cov=${{ matrix.project }}
-        # pytest tests -v --doctest-modules --junitxml=junit/test-results-${{ matrix.python-version }}.xml --cov=com --cov-report=xml --cov-report=html
-        pytest tests -v --cov=${{ matrix.project }} --cov-fail-under 00 --cov-report term --cov-report html:htmlcov --cov-report xml:coverage.xml --doctest-modules -o junit_family=xunit2 --junitxml=junit/test-results-${{ matrix.python-version }}.xml
-        ls -a .coverage
+        # pytest tests -v --doctest-modules -o junit_family=xunit2 --junitxml=junit/test-results-${{ matrix.python-version }}.xml --cov=com --cov-report=xml --cov-report=html
+        pytest tests -v -n 4 --cov=target_s3_jsonl --cov-append --cov-fail-under 00 --cov-report annotate --cov-report xml --cov-report json --cov-report term --cov-report html:htmlcov --doctest-modules
+        ls -al . .coverage
     # - name: Test with pytest
     #   run: pytest tests.py --doctest-modules --junitxml=junit/test-results-${{ matrix.python-version }}.xml
     # - name: Upload pytest test results
