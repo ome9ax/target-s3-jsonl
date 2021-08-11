@@ -76,7 +76,7 @@ def file_metadata():
             'file_data': [
                 '{"c_pk": 1, "c_varchar": "1", "c_int": 1, "c_time": "04:00:00"}\n',
                 '{"c_pk": 2, "c_varchar": "2", "c_int": 2, "c_time": "07:15:00"}\n',
-                '{"c_pk": 3, "c_varchar": "3", "c_int": 3, "c_time": "23:00:03", "_sdc_deleted_at": "2019-02-10T15:51:50.215998Z"}\n']}}
+                '{"c_pk": 3, "c_varchar": "3", "c_int": 3, "c_time": "23:00:03"}\n']}}
 
 
 def test_emit_state(capsys, state):

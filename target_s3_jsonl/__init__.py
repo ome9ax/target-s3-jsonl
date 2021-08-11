@@ -21,6 +21,55 @@ from target_s3_jsonl.logger import get_logger
 LOGGER = get_logger()
 
 
+def add_metadata_columns_to_schema(schema_message):
+    '''Metadata _sdc columns according to the stitch documentation at
+    https://www.stitchdata.com/docs/data-structure/integration-schemas#sdc-columns
+
+    Metadata columns gives information about data injections
+    '''
+    extended_schema_message = schema_message
+    extended_schema_message['schema']['properties']['_sdc_batched_at'] = { 'type': ['null', 'string'], 'format': 'date-time' }
+    extended_schema_message['schema']['properties']['_sdc_deleted_at'] = { 'type': ['null', 'string'] }
+    extended_schema_message['schema']['properties']['_sdc_extracted_at'] = { 'type': ['null', 'string'], 'format': 'date-time' }
+    extended_schema_message['schema']['properties']['_sdc_primary_key'] = {'type': ['null', 'string'] }
+    extended_schema_message['schema']['properties']['_sdc_received_at'] = { 'type': ['null', 'string'], 'format': 'date-time' }
+    extended_schema_message['schema']['properties']['_sdc_sequence'] = {'type': ['integer'] }
+    extended_schema_message['schema']['properties']['_sdc_table_version'] = {'type': ['null', 'string'] }
+
+    return extended_schema_message
+
+
+def add_metadata_values_to_record(record_message, schema_message):
+    '''Populate metadata _sdc columns from incoming record message
+    The location of the required attributes are fixed in the stream
+    '''
+    extended_record = record_message['record']
+    extended_record['_sdc_batched_at'] = datetime.now().isoformat()
+    extended_record['_sdc_deleted_at'] = record_message.get('record', {}).get('_sdc_deleted_at')
+    extended_record['_sdc_extracted_at'] = record_message.get('time_extracted')
+    extended_record['_sdc_primary_key'] = schema_message.get('key_properties')
+    extended_record['_sdc_received_at'] = datetime.now().isoformat()
+    extended_record['_sdc_sequence'] = int(round(time.time() * 1000))
+    extended_record['_sdc_table_version'] = record_message.get('version')
+
+    return extended_record
+
+
+def remove_metadata_values_from_record(record_message):
+    '''Removes every metadata _sdc column from a given record message
+    '''
+    cleaned_record = record_message['record']
+    cleaned_record.pop('_sdc_batched_at', None)
+    cleaned_record.pop('_sdc_deleted_at', None)
+    cleaned_record.pop('_sdc_extracted_at', None)
+    cleaned_record.pop('_sdc_primary_key', None)
+    cleaned_record.pop('_sdc_received_at', None)
+    cleaned_record.pop('_sdc_sequence', None)
+    cleaned_record.pop('_sdc_table_version', None)
+
+    return cleaned_record
+
+
 def emit_state(state):
     if state is not None:
         line = json.dumps(state)
@@ -42,7 +91,7 @@ def float_to_decimal(value):
 
 
 def get_target_key(message, naming_convention=None, timestamp=None, prefix=None):
-    """Creates and returns an S3 key for the message"""
+    '''Creates and returns an S3 key for the message'''
     if not naming_convention:
         naming_convention = '{stream}-{timestamp}.jsonl'
 
@@ -142,18 +191,24 @@ def persist_lines(messages, config):
                 raise Exception('A record for stream {} was encountered before a corresponding schema'.format(stream))
 
             # NOTE: Validate record
+            record_to_load = o['record']
             try:
-                validators[stream].validate(float_to_decimal(o['record']))
+                validators[stream].validate(float_to_decimal(record_to_load))
             except Exception as ex:
                 if type(ex).__name__ == "InvalidOperation":
                     LOGGER.error(
                         "Data validation failed and cannot load to destination. RECORD: {}\n"
                         "'multipleOf' validations that allows long precisions are not supported"
                         " (i.e. with 15 digits or more). Try removing 'multipleOf' methods from JSON schema."
-                        .format(o['record']))
+                        .format(record_to_load))
                     raise ex
 
-            file_data[stream]['file_data'].append(json.dumps(o['record']) + '\n')
+            if config.get('add_metadata_columns'):
+                record_to_load = add_metadata_values_to_record(o, {})
+            else:
+                record_to_load = remove_metadata_values_from_record(o)
+
+            file_data[stream]['file_data'].append(json.dumps(record_to_load) + '\n')
 
             # NOTE: write temporary file
             #       Use 64Mb default memory buffer
@@ -168,7 +223,12 @@ def persist_lines(messages, config):
             if 'stream' not in o:
                 raise Exception("Line is missing required key 'stream': {}".format(message))
             stream = o['stream']
-            schemas[stream] = float_to_decimal(o['schema'])
+
+            if config.get('add_metadata_columns'):
+                schemas[stream] = add_metadata_columns_to_schema(o)
+            else:
+                schemas[stream] = float_to_decimal(o['schema'])
+
             validators[stream] = Draft4Validator(schemas[stream], format_checker=FormatChecker())
 
             if 'key_properties' not in o:
