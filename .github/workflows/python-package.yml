@@ -19,20 +19,17 @@ jobs:
     strategy:
       matrix:
         project: ['target-s3-jsonl']
-        # os: [ubuntu-latest]
         os: [ubuntu-latest, macos-latest, windows-latest]
-        # python-version: [3.8, pypy3]
-        # python-version: [3.8, 3.9]
-        python-version: [3.9]
+        python-version: [3.8, 3.9]
         exclude:
-        #   - os: macos-latest
-        #     python-version: 3.8
-        #   - os: macos-latest
-        #     python-version: 3.7
-          - os: windows-latest
+          - os: macos-latest
+            python-version: 3.8
+          - os: macos-latest
             python-version: 3.9
           - os: windows-latest
             python-version: 3.8
+          - os: windows-latest
+            python-version: 3.9
 
     steps:
     - uses: actions/checkout@v2
@@ -100,13 +97,6 @@ jobs:
         # pytest tests -v --cov=${{ matrix.project }}
         # pytest tests -v --doctest-modules -o junit_family=xunit2 --junitxml=junit/test-results-${{ matrix.python-version }}.xml --cov=com --cov-report=xml --cov-report=html
         pytest
-    # - name: Generate coverage report
-    #   run: |
-    #     . venv/bin/activate
-    #     pip install coverage
-    #     coverage run -m pytest
-    #     coverage xml
-    #     coverage html
     - name: Upload coverage test results to Codecov
       uses: codecov/codecov-action@v2
       if: |
