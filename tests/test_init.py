@@ -1,6 +1,6 @@
 '''Tests for the target_s3_jsonl.main module'''
 # Standard library imports
-from datetime import datetime as dt
+from datetime import datetime as dt, timezone, timedelta
 
 # Third party imports
 from pytest import fixture
@@ -38,7 +38,7 @@ def patch_datetime_now(monkeypatch):
     class mydatetime:
         @classmethod
         def now(cls, x):
-            return dt(2021, 8, 11, 21, 26, 45, 321056)
+            return dt.fromtimestamp(1628713605321.056 / 1e3)
 
     monkeypatch.setattr(datetime, 'datetime', mydatetime)
 
@@ -174,7 +174,7 @@ def test_add_metadata_values_to_record(patch_datetime_now):
             '_sdc_extracted_at': '2019-01-31T15:51:47.465408Z',
             '_sdc_primary_key': None,
             '_sdc_received_at': '2021-08-11T21:26:45.321056',
-            '_sdc_sequence': 1628717205000,
+            '_sdc_sequence': 1628713605000,
             '_sdc_table_version': 1}
 
 
