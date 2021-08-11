@@ -59,23 +59,6 @@ def get_target_key(message, naming_convention=None, timestamp=None, prefix=None)
     return str(Path(key).parent / f'{prefix}{Path(key).name}') if prefix else key
 
 
-def upload_files(config, file_data):
-    s3_client = s3.create_client(config)
-    for stream, file_info in file_data.items():
-        if file_info['file_name'].exists():
-            s3.upload_file(
-                str(file_info['file_name']),
-                s3_client,
-                config.get('s3_bucket'),
-                file_info['target_key'],
-                encryption_type=config.get('encryption_type'),
-                encryption_key=config.get('encryption_key'))
-            LOGGER.debug("{} file {} uploaded to {}".format(stream, file_info['target_key'], config.get('s3_bucket')))
-
-            # NOTE: Remove the local file(s)
-            file_info['file_name'].unlink()
-
-
 def save_file(file_data, compression):
     if any(file_data['file_data']):
         if compression == 'gzip':
@@ -90,6 +73,23 @@ def save_file(file_data, compression):
             with open(file_data['file_name'], 'a', encoding='utf-8') as output_file:
                 output_file.writelines(file_data['file_data'])
         del file_data['file_data'][:]
+
+
+def upload_files(file_data, config):
+    s3_client = s3.create_client(config)
+    for stream, file_info in file_data.items():
+        if file_info['file_name'].exists():
+            s3.upload_file(
+                str(file_info['file_name']),
+                s3_client,
+                config.get('s3_bucket'),
+                file_info['target_key'],
+                encryption_type=config.get('encryption_type'),
+                encryption_key=config.get('encryption_key'))
+            LOGGER.debug("{} file {} uploaded to {}".format(stream, file_info['target_key'], config.get('s3_bucket')))
+
+            # NOTE: Remove the local file(s)
+            file_info['file_name'].unlink()
 
 
 def persist_lines(messages, config):
@@ -215,7 +215,7 @@ def main():
 
     # NOTE: Upload created files to S3
     if not config.get('dry', False):
-        upload_files(config, file_data)
+        upload_files(file_data, config)
 
     emit_state(state)
     LOGGER.debug('Exiting normally')

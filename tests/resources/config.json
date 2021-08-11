@@ -4,7 +4,7 @@
     "aws_secret_access_key": "SECRET",
     "s3_bucket": "BUCKET",
     "temp_dir": "tests/output",
-    "memory_buffer": 64000000,
+    "memory_buffer": 2000000,
     "compression": "none",
     "naming_convention": "{stream}-{timestamp}.jsonl"
 }
