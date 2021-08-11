@@ -38,7 +38,7 @@ def patch_datetime_now(monkeypatch):
     class mydatetime:
         @classmethod
         def now(cls, x):
-            return dt.fromtimestamp(1628713605321.056 / 1e3)
+            return dt.utcfromtimestamp(1628713605321.056 / 1e3)
 
     monkeypatch.setattr(datetime, 'datetime', mydatetime)
 
