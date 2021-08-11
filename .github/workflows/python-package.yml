@@ -24,15 +24,15 @@ jobs:
         # python-version: [3.8, pypy3]
         # python-version: [3.8, 3.9]
         python-version: [3.9]
-        # exclude:
+        exclude:
         #   - os: macos-latest
         #     python-version: 3.8
         #   - os: macos-latest
         #     python-version: 3.7
-        #   - os: windows-latest
-        #     python-version: 3.6
-        #   - os: windows-latest
-        #     python-version: 3.7
+          - os: windows-latest
+            python-version: 3.9
+          - os: windows-latest
+            python-version: 3.8
 
     steps:
     - uses: actions/checkout@v2

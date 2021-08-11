@@ -65,8 +65,7 @@ def file_metadata():
             'file_data': [
                 '{"c_pk": 1, "c_varchar": "1", "c_int": 1, "c_time": "04:00:00"}\n',
                 '{"c_pk": 2, "c_varchar": "2", "c_int": 2, "c_time": "07:15:00"}\n',
-                '{"c_pk": 3, "c_varchar": "3", "c_int": 3, "c_time": "23:00:03", "_sdc_deleted_at": "2019-02-10T15:51:50.215998Z"}\n']}
-        }
+                '{"c_pk": 3, "c_varchar": "3", "c_int": 3, "c_time": "23:00:03", "_sdc_deleted_at": "2019-02-10T15:51:50.215998Z"}\n']}}
 
 
 def test_get_target_key():
@@ -91,7 +90,7 @@ def test_persist_lines(config, input_data, file_metadata):
     assert len(file_paths) == 3
 
     assert len(set(str(values['file_name']) for _, values in output_file_metadata.items())
-        - set(str(path) for path in file_paths)) == 0
+               - set(str(path) for path in file_paths)) == 0
 
     with open(output_file_metadata['tap_dummy_test-test_table_three']['file_name'], 'r', encoding='utf-8') as input_file:
         input_data = [item for item in input_file]
