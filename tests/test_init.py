@@ -125,8 +125,9 @@ def test_upload_files(monkeypatch, config, file_metadata):
 
     monkeypatch.setattr(s3, 'create_client', lambda config: None)
 
-    monkeypatch.setattr(s3, 'upload_file', lambda filename, s3_client, bucket, s3_key,
-                    encryption_type=None, encryption_key=None: None)
+    monkeypatch.setattr(
+        s3, 'upload_file', lambda filename, s3_client, bucket, s3_key,
+        encryption_type=None, encryption_key=None: None)
 
     Path(config['temp_dir']).mkdir(parents=True, exist_ok=True)
     for _, file_info in file_metadata.items():
