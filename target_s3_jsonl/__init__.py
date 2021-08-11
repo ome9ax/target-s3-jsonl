@@ -214,7 +214,8 @@ def main():
         state, file_data = persist_lines(input_messages, config)
 
     # NOTE: Upload created files to S3
-    upload_files(config, file_data)
+    if not config.get('dry', False):
+        upload_files(config, file_data)
 
     emit_state(state)
     LOGGER.debug('Exiting normally')

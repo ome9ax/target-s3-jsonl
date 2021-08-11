@@ -1,4 +1,4 @@
-## Problem
+## Objective
 
 _Describe the problem your PR is trying to solve_
 

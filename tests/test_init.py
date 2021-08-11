@@ -5,7 +5,7 @@
 from pytest import fixture, mark
 
 # Package imports
-from target_s3_jsonl import Path, json, get_target_key, save_file, persist_lines
+from target_s3_jsonl import Path, json, emit_state, float_to_decimal, get_target_key, save_file, persist_lines
 
 
 with open(Path('tests', 'resources', 'config.json'), 'r', encoding='utf-8') as config_file, \

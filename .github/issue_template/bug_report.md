@@ -24,7 +24,7 @@ If applicable, add screenshots to help explain your problem.
 
 **Your environment**
  - Version of target: [e.g. 2.0.0]
- - Version of python [e.g. 3.8]
+ - Version of python [e.g. 3.9]
 
 **Additional context**
 Add any other context about the problem here.

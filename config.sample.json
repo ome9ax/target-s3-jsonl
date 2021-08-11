@@ -3,8 +3,6 @@
     "aws_secret_access_key": "SECRET",
     "s3_bucket": "BUCKET",
     "s3_key_prefix": "SOME-PREFIX/",
-    "temp_dir": "output",
-    "memory_buffer": 64000000,
     "compression": "gzip",
     "naming_convention": "{stream}-{timestamp}.jsonl"
 }

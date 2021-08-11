@@ -1,4 +1,5 @@
 {
+    "dry": true,
     "aws_access_key_id": "ACCESS-KEY",
     "aws_secret_access_key": "SECRET",
     "s3_bucket": "BUCKET",
