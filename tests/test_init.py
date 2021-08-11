@@ -37,7 +37,7 @@ def patch_datetime_now(monkeypatch):
 
     class mydatetime:
         @classmethod
-        def now(cls):
+        def now(cls, x):
             return dt(2021, 8, 11, 21, 26, 45, 321056)
 
     monkeypatch.setattr(datetime, 'datetime', mydatetime)

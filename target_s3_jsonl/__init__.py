@@ -43,7 +43,7 @@ def add_metadata_values_to_record(record_message, schema_message):
     '''Populate metadata _sdc columns from incoming record message
     The location of the required attributes are fixed in the stream
     '''
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(datetime.timezone.utc)
     record_message['record'].update({
         '_sdc_batched_at': now.isoformat(),
         '_sdc_deleted_at': record_message.get('record', {}).get('_sdc_deleted_at'),
@@ -100,9 +100,9 @@ def get_target_key(message, naming_convention=None, timestamp=None, prefix=None)
     # replace simple tokens
     key = naming_convention.format(
         stream=message['stream'],
-        timestamp=timestamp if timestamp is not None else datetime.datetime.now().strftime('%Y%m%dT%H%M%S'),
-        date=datetime.datetime.now().strftime('%Y%m%d'),
-        time=datetime.datetime.now().strftime('%H%M%S'))
+        timestamp=timestamp if timestamp is not None else datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%S'),
+        date=datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d'),
+        time=datetime.datetime.now(datetime.timezone.utc).strftime('%H%M%S'))
 
     # NOTE: Replace dynamic tokens
     # TODO: replace dynamic tokens such as {date(<format>)} with the date formatted as requested in <format>
@@ -176,7 +176,7 @@ def persist_lines(messages, config):
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     file_data = {}
-    now = datetime.datetime.now().strftime('%Y%m%dT%H%M%S')
+    now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%S')
 
     for message in messages:
         try:
