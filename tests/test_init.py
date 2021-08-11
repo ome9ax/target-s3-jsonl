@@ -174,6 +174,24 @@ def test_add_metadata_values_to_record(patch_datetime_now):
             '_sdc_extracted_at': '2019-01-31T15:51:47.465408Z',
             '_sdc_primary_key': None,
             '_sdc_received_at': '2021-08-11T21:26:45.321056',
+            '_sdc_sequence': 1628713605000,
+            '_sdc_table_version': 1}
+
+
+def test_add_metadata_values_to_record_2(patch_datetime_now):
+    '''TEST : simple add_metadata_values_to_record call'''
+
+    assert add_metadata_values_to_record({
+        "type": "RECORD", "stream": "tap_dummy_test-test_table_one",
+        "record": {
+            "c_pk": 1, "c_varchar": "1", "c_int": 1, "c_float": 1.99},
+        "version": 1, "time_extracted": "2019-01-31T15:51:47.465408Z"}, {}) == {
+            'c_pk': 1, 'c_varchar': '1', 'c_int': 1, 'c_float': 1.99,
+            '_sdc_batched_at': '2021-08-11T21:26:45.321056',
+            '_sdc_deleted_at': None,
+            '_sdc_extracted_at': '2019-01-31T15:51:47.465408Z',
+            '_sdc_primary_key': None,
+            '_sdc_received_at': '2021-08-11T21:26:45.321056',
             '_sdc_sequence': 1628717205000,
             '_sdc_table_version': 1}
 
