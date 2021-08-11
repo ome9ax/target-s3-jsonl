@@ -174,7 +174,7 @@ def test_add_metadata_values_to_record(patch_datetime_now):
             '_sdc_extracted_at': '2019-01-31T15:51:47.465408Z',
             '_sdc_primary_key': None,
             '_sdc_received_at': '2021-08-11T21:26:45.321056',
-            '_sdc_sequence': 1628713605000,
+            '_sdc_sequence': 1628717205000,
             '_sdc_table_version': 1}
 
 
