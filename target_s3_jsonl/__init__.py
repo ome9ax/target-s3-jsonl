@@ -10,8 +10,8 @@ import json
 from pathlib import Path
 import sys
 import tempfile
-from datetime import datetime
-from time import time
+import datetime
+from time import mktime
 
 from jsonschema import Draft4Validator, FormatChecker
 from decimal import Decimal
@@ -28,47 +28,48 @@ def add_metadata_columns_to_schema(schema_message):
 
     Metadata columns gives information about data injections
     '''
-    extended_schema_message = schema_message
-    extended_schema_message['schema']['properties']['_sdc_batched_at'] = {'type': ['null', 'string'], 'format': 'date-time'}
-    extended_schema_message['schema']['properties']['_sdc_deleted_at'] = {'type': ['null', 'string']}
-    extended_schema_message['schema']['properties']['_sdc_extracted_at'] = {'type': ['null', 'string'], 'format': 'date-time'}
-    extended_schema_message['schema']['properties']['_sdc_primary_key'] = {'type': ['null', 'string']}
-    extended_schema_message['schema']['properties']['_sdc_received_at'] = {'type': ['null', 'string'], 'format': 'date-time'}
-    extended_schema_message['schema']['properties']['_sdc_sequence'] = {'type': ['integer']}
-    extended_schema_message['schema']['properties']['_sdc_table_version'] = {'type': ['null', 'string']}
-
-    return extended_schema_message
+    schema_message['schema']['properties'].update({
+        '_sdc_batched_at': {'type': ['null', 'string'], 'format': 'date-time'},
+        '_sdc_deleted_at': {'type': ['null', 'string']},
+        '_sdc_extracted_at': {'type': ['null', 'string'], 'format': 'date-time'},
+        '_sdc_primary_key': {'type': ['null', 'string']},
+        '_sdc_received_at': {'type': ['null', 'string'], 'format': 'date-time'},
+        '_sdc_sequence': {'type': ['integer']},
+        '_sdc_table_version': {'type': ['null', 'string']}})
+    return schema_message
 
 
 def add_metadata_values_to_record(record_message, schema_message):
     '''Populate metadata _sdc columns from incoming record message
     The location of the required attributes are fixed in the stream
     '''
-    extended_record = record_message['record']
-    extended_record['_sdc_batched_at'] = datetime.now().isoformat()
-    extended_record['_sdc_deleted_at'] = record_message.get('record', {}).get('_sdc_deleted_at')
-    extended_record['_sdc_extracted_at'] = record_message.get('time_extracted')
-    extended_record['_sdc_primary_key'] = schema_message.get('key_properties')
-    extended_record['_sdc_received_at'] = datetime.now().isoformat()
-    extended_record['_sdc_sequence'] = int(round(time() * 1000))
-    extended_record['_sdc_table_version'] = record_message.get('version')
+    now = datetime.datetime.now()
+    record_message['record'].update({
+        '_sdc_batched_at': now.isoformat(),
+        '_sdc_deleted_at': record_message.get('record', {}).get('_sdc_deleted_at'),
+        '_sdc_extracted_at': record_message.get('time_extracted'),
+        '_sdc_primary_key': schema_message.get('key_properties'),
+        '_sdc_received_at': now.isoformat(),
+        '_sdc_sequence': int(round(mktime(now.timetuple()) * 1000)),
+        '_sdc_table_version': record_message.get('version')})
 
-    return extended_record
+    return record_message['record']
 
 
 def remove_metadata_values_from_record(record_message):
     '''Removes every metadata _sdc column from a given record message
     '''
-    cleaned_record = record_message['record']
-    cleaned_record.pop('_sdc_batched_at', None)
-    cleaned_record.pop('_sdc_deleted_at', None)
-    cleaned_record.pop('_sdc_extracted_at', None)
-    cleaned_record.pop('_sdc_primary_key', None)
-    cleaned_record.pop('_sdc_received_at', None)
-    cleaned_record.pop('_sdc_sequence', None)
-    cleaned_record.pop('_sdc_table_version', None)
+    keys = {
+        '_sdc_batched_at',
+        '_sdc_deleted_at',
+        '_sdc_extracted_at',
+        '_sdc_primary_key',
+        '_sdc_received_at',
+        '_sdc_sequence',
+        '_sdc_table_version'}
+    [record_message['record'].pop(key, None) for key in keys]
 
-    return cleaned_record
+    return record_message['record']
 
 
 def emit_state(state):
@@ -99,9 +100,9 @@ def get_target_key(message, naming_convention=None, timestamp=None, prefix=None)
     # replace simple tokens
     key = naming_convention.format(
         stream=message['stream'],
-        timestamp=timestamp if timestamp is not None else datetime.now().strftime('%Y%m%dT%H%M%S'),
-        date=datetime.now().strftime('%Y%m%d'),
-        time=datetime.now().strftime('%H%M%S'))
+        timestamp=timestamp if timestamp is not None else datetime.datetime.now().strftime('%Y%m%dT%H%M%S'),
+        date=datetime.datetime.now().strftime('%Y%m%d'),
+        time=datetime.datetime.now().strftime('%H%M%S'))
 
     # NOTE: Replace dynamic tokens
     # TODO: replace dynamic tokens such as {date(<format>)} with the date formatted as requested in <format>
@@ -175,7 +176,7 @@ def persist_lines(messages, config):
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     file_data = {}
-    now = datetime.now().strftime('%Y%m%dT%H%M%S')
+    now = datetime.datetime.now().strftime('%Y%m%dT%H%M%S')
 
     for message in messages:
         try:
