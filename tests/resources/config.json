@@ -1,8 +1,10 @@
 {
+    "dry": true,
     "aws_access_key_id": "ACCESS-KEY",
     "aws_secret_access_key": "SECRET",
     "s3_bucket": "BUCKET",
-    "s3_key_prefix": "SOME-PREFIX/",
-    "compression": "gzip",
+    "temp_dir": "tests/output",
+    "memory_buffer": 2000000,
+    "compression": "none",
     "naming_convention": "{stream}-{timestamp}.jsonl"
 }
