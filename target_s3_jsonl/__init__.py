@@ -77,22 +77,22 @@ def upload_files(config, file_data):
 
 
 def save_file(file_data, compression):
-    if compression == 'gzip':
-        with open(file_data['file_name'], 'ab') as output_file:
-            with gzip.open(output_file, 'wt', encoding='utf-8') as output_data:
-                output_data.writelines(file_data['file_data'])
-    if compression == 'lzma':
-        with open(file_data['file_name'], 'ab') as output_file:
-            with lzma.open(output_file, 'wt', encoding='utf-8') as output_data:
-                output_data.writelines(file_data['file_data'])
-    else:
-        with open(file_data['file_name'], 'a', encoding='utf-8') as output_file:
-            output_file.writelines(file_data['file_data'])
-    del file_data['file_data'][:]
+    if any(file_data['file_data']):
+        if compression == 'gzip':
+            with open(file_data['file_name'], 'ab') as output_file:
+                with gzip.open(output_file, 'wt', encoding='utf-8') as output_data:
+                    output_data.writelines(file_data['file_data'])
+        if compression == 'lzma':
+            with open(file_data['file_name'], 'ab') as output_file:
+                with lzma.open(output_file, 'wt', encoding='utf-8') as output_data:
+                    output_data.writelines(file_data['file_data'])
+        else:
+            with open(file_data['file_name'], 'a', encoding='utf-8') as output_file:
+                output_file.writelines(file_data['file_data'])
+        del file_data['file_data'][:]
 
 
-# NOTE: 64Mb default buffer
-def persist_lines(messages, config, buffer_size=64e6):
+def persist_lines(messages, config):
     state = None
     schemas = {}
     key_properties = {}
@@ -156,7 +156,8 @@ def persist_lines(messages, config, buffer_size=64e6):
             file_data[stream]['file_data'].append(json.dumps(o['record']) + '\n')
 
             # NOTE: write temporary file
-            if sys.getsizeof(file_data[stream]['file_data']) > buffer_size:
+            #       Use 64Mb default memory buffer
+            if sys.getsizeof(file_data[stream]['file_data']) > config.get('memory_buffer', 64e6):
                 save_file(file_data[stream], compression)
 
             state = None
@@ -192,13 +193,9 @@ def persist_lines(messages, config, buffer_size=64e6):
             LOGGER.warning('Unknown message type {} in message {}'.format(o['type'], o))
 
     for _, file_info in file_data.items():
-        if any(file_info['file_data']):
-            save_file(file_info, compression)
+        save_file(file_info, compression)
 
-    # NOTE: Upload created files to S3
-    upload_files(config, file_data)
-
-    return state
+    return state, file_data
 
 
 def main():
@@ -214,7 +211,10 @@ def main():
         raise Exception('Config is missing required keys: {}'.format(missing_params))
 
     with io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8') as input_messages:
-        state = persist_lines(input_messages, config)
+        state, file_data = persist_lines(input_messages, config)
+
+    # NOTE: Upload created files to S3
+    upload_files(config, file_data)
 
     emit_state(state)
     LOGGER.debug('Exiting normally')
