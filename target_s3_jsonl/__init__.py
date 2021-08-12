@@ -42,7 +42,7 @@ def add_metadata_values_to_record(record_message, schema_message, timestamp):
     '''Populate metadata _sdc columns from incoming record message
     The location of the required attributes are fixed in the stream
     '''
-    #datetime.datetime.now(datetime.timezone.utc)
+    # datetime.datetime.now(datetime.timezone.utc)
     now = datetime.datetime.fromtimestamp(timestamp).replace(tzinfo=None)
     record_message['record'].update({
         '_sdc_batched_at': now.isoformat(),
