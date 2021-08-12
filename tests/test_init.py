@@ -37,12 +37,20 @@ def patch_datetime_now(monkeypatch):
 
     class mydatetime:
         @classmethod
+        def utcnow(cls):
+            return dt.fromtimestamp(1628713605.321056, tz=timezone.utc).replace(tzinfo=None)
+
+        @classmethod
         def now(cls, x=timezone.utc):
             return cls.utcnow()
 
         @classmethod
-        def utcnow(cls):
-            return dt.fromtimestamp(1628713605.321056, tz=timezone.utc).replace(tzinfo=None)
+        def utcfromtimestamp(cls, x):
+            return cls.utcnow()
+
+        @classmethod
+        def fromtimestamp(cls, x):
+            return cls.utcnow()
 
     monkeypatch.setattr(datetime, 'datetime', mydatetime)
 
