@@ -164,14 +164,14 @@ def test_add_metadata_columns_to_schema():
             'key_properties': ['c_pk']}
 
 
-def test_add_metadata_values_to_record(patch_datetime_now):
+def test_add_metadata_values_to_record():
     '''TEST : simple add_metadata_values_to_record call'''
 
     assert add_metadata_values_to_record({
         "type": "RECORD", "stream": "tap_dummy_test-test_table_one",
         "record": {
             "c_pk": 1, "c_varchar": "1", "c_int": 1, "c_float": 1.99},
-        "version": 1, "time_extracted": "2019-01-31T15:51:47.465408Z"}, {}, datetime.datetime.utcnow()) == {
+        "version": 1, "time_extracted": "2019-01-31T15:51:47.465408Z"}, {}, 1628713605.321056) == {
             'c_pk': 1, 'c_varchar': '1', 'c_int': 1, 'c_float': 1.99,
             '_sdc_batched_at': '2021-08-11T21:26:45.321056',
             '_sdc_deleted_at': None,
@@ -268,3 +268,7 @@ def test_persist_lines(config, input_data, state, file_metadata):
         assert [item for item in input_file] == file_metadata['tap_dummy_test-test_table_three']['file_data']
 
     clear_dir(Path(config['temp_dir']))
+
+
+# def test_persist_lines(patch_datetime_now, config, input_data, state, file_metadata):
+
