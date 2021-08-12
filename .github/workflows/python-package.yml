@@ -82,7 +82,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-
 
-    - name: Dry Lint with flake8
+    - name: Lint with flake8
       run: |
         . venv/bin/activate
         # stop the build if there are Python syntax errors or undefined names
