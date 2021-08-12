@@ -153,7 +153,7 @@ def persist_lines(messages, config):
     naming_convention_default = '{stream}-{timestamp}.jsonl'
     naming_convention = config.get('naming_convention') or naming_convention_default
     compression = None
-    timezone = datetime.timezone.utc if config.get('naming_convention') == 'utc' else None
+    timezone = datetime.timezone(datetime.timedelta(hours=config.get('timezone_offset'))) if config.get('timezone_offset') is not None else None
 
     if f"{config.get('compression')}".lower() == 'gzip':
         compression = 'gzip'

@@ -6,6 +6,6 @@
     "temp_dir": "tests/output",
     "memory_buffer": 2000000,
     "compression": "none",
-	"timezone": null,
+	"timezone": 0,
     "naming_convention": "{stream}-{timestamp}.jsonl"
 }
