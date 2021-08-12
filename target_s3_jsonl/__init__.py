@@ -280,7 +280,7 @@ def main():
         state, file_data = persist_lines(input_messages, config)
 
     # NOTE: Upload created files to S3
-    if not config.get('dry', False):
+    if not config.get('local', False):
         upload_files(file_data, config)
 
     emit_state(state)

@@ -1,4 +1,5 @@
 {
+	"local": false,
 	"add_metadata_columns": false,
     "aws_access_key_id": "ACCESS-KEY",
     "aws_secret_access_key": "SECRET",
