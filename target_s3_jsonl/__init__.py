@@ -28,13 +28,13 @@ def add_metadata_columns_to_schema(schema_message):
     Metadata columns gives information about data injections
     '''
     schema_message['schema']['properties'].update(
-        _sdc_batched_at = {'type': ['null', 'string'], 'format': 'date-time'},
-        _sdc_deleted_at = {'type': ['null', 'string']},
-        _sdc_extracted_at = {'type': ['null', 'string'], 'format': 'date-time'},
-        _sdc_primary_key = {'type': ['null', 'string']},
-        _sdc_received_at = {'type': ['null', 'string'], 'format': 'date-time'},
-        _sdc_sequence = {'type': ['integer']},
-        _sdc_table_version = {'type': ['null', 'string']})
+        _sdc_batched_at={'type': ['null', 'string'], 'format': 'date-time'},
+        _sdc_deleted_at={'type': ['null', 'string']},
+        _sdc_extracted_at={'type': ['null', 'string'], 'format': 'date-time'},
+        _sdc_primary_key={'type': ['null', 'string']},
+        _sdc_received_at={'type': ['null', 'string'], 'format': 'date-time'},
+        _sdc_sequence={'type': ['integer']},
+        _sdc_table_version={'type': ['null', 'string']})
 
     return schema_message
 
@@ -45,13 +45,13 @@ def add_metadata_values_to_record(record_message, schema_message, timestamp):
     '''
     now = datetime.datetime.fromtimestamp(timestamp, tz=datetime.timezone.utc).replace(tzinfo=None).isoformat()
     record_message['record'].update(
-        _sdc_batched_at = now,
-        _sdc_deleted_at = record_message.get('record', {}).get('_sdc_deleted_at'),
-        _sdc_extracted_at = record_message.get('time_extracted'),
-        _sdc_primary_key = schema_message.get('key_properties'),
-        _sdc_received_at = now,
-        _sdc_sequence = int(timestamp * 1e3),
-        _sdc_table_version = record_message.get('version'))
+        _sdc_batched_at=now,
+        _sdc_deleted_at=record_message.get('record', {}).get('_sdc_deleted_at'),
+        _sdc_extracted_at=record_message.get('time_extracted'),
+        _sdc_primary_key=schema_message.get('key_properties'),
+        _sdc_received_at=now,
+        _sdc_sequence=int(timestamp * 1e3),
+        _sdc_table_version=record_message.get('version'))
 
     return record_message['record']
 
