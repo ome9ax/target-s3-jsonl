@@ -35,6 +35,7 @@ def add_metadata_columns_to_schema(schema_message):
         _sdc_received_at = {'type': ['null', 'string'], 'format': 'date-time'},
         _sdc_sequence = {'type': ['integer']},
         _sdc_table_version = {'type': ['null', 'string']})
+
     return schema_message
 
 
