@@ -42,7 +42,7 @@ def patch_datetime_now(monkeypatch):
 
         @classmethod
         def utcnow(cls):
-            return dt(2021, 8, 11, 21, 26, 45, 321056, tzinfo=timezone.utc).replace(tzinfo=None)
+            return dt.fromtimestamp(1628713605.321056, tz=timezone.utc).replace(tzinfo=None)
 
     monkeypatch.setattr(datetime, 'datetime', mydatetime)
 
@@ -178,7 +178,7 @@ def test_add_metadata_values_to_record():
             '_sdc_extracted_at': '2019-01-31T15:51:47.465408Z',
             '_sdc_primary_key': None,
             '_sdc_received_at': '2021-08-11T20:26:45.321056',
-            '_sdc_sequence': 1628713605,
+            '_sdc_sequence': 1628713605321,
             '_sdc_table_version': 1}
 
 

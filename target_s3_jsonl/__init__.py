@@ -49,7 +49,7 @@ def add_metadata_values_to_record(record_message, schema_message, timestamp):
         '_sdc_extracted_at': record_message.get('time_extracted'),
         '_sdc_primary_key': schema_message.get('key_properties'),
         '_sdc_received_at': now,
-        '_sdc_sequence': int(timestamp),
+        '_sdc_sequence': int(timestamp * 1e3),
         '_sdc_table_version': record_message.get('version')})
 
     return record_message['record']
@@ -177,7 +177,7 @@ def persist_lines(messages, config):
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     file_data = {}
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(timezone)
     now_formatted = now.strftime('%Y%m%dT%H%M%S')
 
     for message in messages:
