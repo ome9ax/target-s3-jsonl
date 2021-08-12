@@ -271,4 +271,3 @@ def test_persist_lines(config, input_data, state, file_metadata):
 
 
 # def test_persist_lines(patch_datetime_now, config, input_data, state, file_metadata):
-

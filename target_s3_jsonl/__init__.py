@@ -42,7 +42,8 @@ def add_metadata_values_to_record(record_message, schema_message, timestamp):
     '''Populate metadata _sdc columns from incoming record message
     The location of the required attributes are fixed in the stream
     '''
-    now = datetime.datetime.fromtimestamp(timestamp).replace(tzinfo=None) #datetime.datetime.now(datetime.timezone.utc)
+    #datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.fromtimestamp(timestamp).replace(tzinfo=None)
     record_message['record'].update({
         '_sdc_batched_at': now.isoformat(),
         '_sdc_deleted_at': record_message.get('record', {}).get('_sdc_deleted_at'),
