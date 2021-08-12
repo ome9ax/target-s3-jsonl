@@ -37,7 +37,7 @@ def patch_datetime_now(monkeypatch):
 
     class mydatetime:
         @classmethod
-        def now(cls, x = timezone.utc):
+        def now(cls, x=timezone.utc):
             return cls.utcnow()
 
         @classmethod

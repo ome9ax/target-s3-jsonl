@@ -38,7 +38,7 @@ def add_metadata_columns_to_schema(schema_message):
     return schema_message
 
 
-def add_metadata_values_to_record(record_message, schema_message, now = None):
+def add_metadata_values_to_record(record_message, schema_message, now=None):
     '''Populate metadata _sdc columns from incoming record message
     The location of the required attributes are fixed in the stream
     '''
