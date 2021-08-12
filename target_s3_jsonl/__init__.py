@@ -50,7 +50,7 @@ def add_metadata_values_to_record(record_message, schema_message):
         '_sdc_extracted_at': record_message.get('time_extracted'),
         '_sdc_primary_key': schema_message.get('key_properties'),
         '_sdc_received_at': now.isoformat(),
-        '_sdc_sequence': int(round(mktime(now.timetuple()) * 1000)),
+        '_sdc_sequence': int(now.timestamp()),
         '_sdc_table_version': record_message.get('version')})
 
     return record_message['record']
