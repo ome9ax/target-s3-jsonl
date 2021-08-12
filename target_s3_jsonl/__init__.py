@@ -11,7 +11,6 @@ from pathlib import Path
 import sys
 import tempfile
 import datetime
-from time import mktime
 
 from jsonschema import Draft4Validator, FormatChecker
 from decimal import Decimal
