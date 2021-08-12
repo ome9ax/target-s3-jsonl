@@ -92,7 +92,7 @@ def float_to_decimal(value):
     return value
 
 
-def get_target_key(message, naming_convention=None, timestamp=None, prefix=None):
+def get_target_key(message, naming_convention=None, timestamp=None, prefix=None, timezone=None):
     '''Creates and returns an S3 key for the message'''
     if not naming_convention:
         naming_convention = '{stream}-{timestamp}.jsonl'
@@ -100,9 +100,9 @@ def get_target_key(message, naming_convention=None, timestamp=None, prefix=None)
     # replace simple tokens
     key = naming_convention.format(
         stream=message['stream'],
-        timestamp=timestamp if timestamp is not None else datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%S'),
-        date=datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d'),
-        time=datetime.datetime.now(datetime.timezone.utc).strftime('%H%M%S'))
+        timestamp=timestamp if timestamp is not None else datetime.datetime.now(timezone).strftime('%Y%m%dT%H%M%S'),
+        date=datetime.datetime.now(timezone).strftime('%Y%m%d'),
+        time=datetime.datetime.now(timezone).strftime('%H%M%S'))
 
     # NOTE: Replace dynamic tokens
     # TODO: replace dynamic tokens such as {date(<format>)} with the date formatted as requested in <format>
@@ -152,6 +152,7 @@ def persist_lines(messages, config):
     naming_convention_default = '{stream}-{timestamp}.jsonl'
     naming_convention = config.get('naming_convention') or naming_convention_default
     compression = None
+    timezone = datetime.timezone.utc if config.get('naming_convention') == 'utc' else None
 
     if f"{config.get('compression')}".lower() == 'gzip':
         compression = 'gzip'
@@ -246,7 +247,8 @@ def persist_lines(messages, config):
                         o,
                         naming_convention=naming_convention,
                         timestamp=now_formatted,
-                        prefix=config.get('s3_key_prefix', '')),
+                        prefix=config.get('s3_key_prefix', ''),
+                        timezone=timezone),
                     'file_name': temp_dir / naming_convention_default.format(stream=stream, timestamp=now_formatted),
                     'file_data': []}
 
