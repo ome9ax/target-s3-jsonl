@@ -125,6 +125,7 @@ def save_file(file_data, compression):
             with open(file_data['file_name'], 'a', encoding='utf-8') as output_file:
                 output_file.writelines(file_data['file_data'])
         del file_data['file_data'][:]
+        LOGGER.debug("'{}' file saved using compression '{}'".format(file_data['file_name'], compression or 'none'))
 
 
 def upload_files(file_data, config):
