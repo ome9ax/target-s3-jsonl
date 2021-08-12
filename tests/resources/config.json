@@ -1,10 +1,11 @@
 {
-    "dry": true,
+	"add_metadata_columns": false,
     "aws_access_key_id": "ACCESS-KEY",
     "aws_secret_access_key": "SECRET",
     "s3_bucket": "BUCKET",
     "temp_dir": "tests/output",
     "memory_buffer": 2000000,
     "compression": "none",
+	"timezone": null,
     "naming_convention": "{stream}-{timestamp}.jsonl"
 }
