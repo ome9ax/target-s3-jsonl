@@ -95,8 +95,10 @@ Full list of options in `config.json`:
 | encryption_key                      | String  |            | A reference to the encryption key to use for data encryption. For KMS encryption, this should be the name of the KMS encryption key ID (e.g. '1234abcd-1234-1234-1234-1234abcd1234'). This field is ignored if 'encryption_type' is none or blank. |
 | compression                         | String  |            | The type of compression to apply before uploading. Supported options are `none` (default), `gzip`, and `lzma`. For gzipped files, the file extension will automatically be changed to `.jsonl.gz` for all files. For `lzma` compression, the file extension will automatically be changed to `.jsonl.xz` for all files. |
 | naming_convention                   | String  |            | (Default: None) Custom naming convention of the s3 key. Replaces tokens `date`, `stream`, and `timestamp` with the appropriate values. <br><br>Supports "folders" in s3 keys e.g. `folder/folder2/{stream}/export_date={date}/{timestamp}.jsonl`. <br><br>Honors the `s3_key_prefix`,  if set, by prepending the "filename". E.g. naming_convention = `folder1/my_file.jsonl` and s3_key_prefix = `prefix_` results in `folder1/prefix_my_file.jsonl` |
+| timezone_offset                     | Integer |            | Use offset `0` hours is you want the `naming_convention` to use `utc` time zone. The `null` values is used by default. |
 | temp_dir                            | String  |            | (Default: platform-dependent) Directory of temporary JSONL files with RECORD messages. |
-| memory_buffer                       | String  |            | Memory buffer's size used before storing the data into the temporary file. 64Mb used by default if unspecified. |
+| local                               | Boolean |            | Keep the file in the `temp_dir` directory without uploading the files on `s3`. |
+| memory_buffer                       | Integer |            | Memory buffer's size used before storing the data into the temporary file. 64Mb used by default if unspecified. |
 
 ## Test
 Run pytest

@@ -1,11 +1,27 @@
 '''Tests for the target_s3_jsonl.main module'''
 # Standard library imports
+from datetime import datetime as dt, timezone
 
 # Third party imports
 from pytest import fixture
 
 # Package imports
-from target_s3_jsonl import Decimal, Path, json, s3, emit_state, float_to_decimal, get_target_key, save_file, upload_files, persist_lines
+from target_s3_jsonl import (
+    Decimal,
+    datetime,
+    Path,
+    json,
+    s3,
+    emit_state,
+    float_to_decimal,
+    get_target_key,
+    save_file,
+    upload_files,
+    persist_lines,
+    add_metadata_columns_to_schema,
+    add_metadata_values_to_record,
+    remove_metadata_values_from_record
+)
 
 
 with open(Path('tests', 'resources', 'messages-with-three-streams.json'), 'r', encoding='utf-8') as input_file, \
@@ -14,6 +30,29 @@ with open(Path('tests', 'resources', 'messages-with-three-streams.json'), 'r', e
     INPUT_DATA = [item for item in input_file]
     INVALID_ROW_DATA = [item for item in invalid_row_file]
     INVALID_ORDER_DATA = [item for item in invalid_order_file]
+
+
+@fixture
+def patch_datetime_now(monkeypatch):
+
+    class mydatetime:
+        @classmethod
+        def utcnow(cls):
+            return dt.fromtimestamp(1628713605.321056, tz=timezone.utc).replace(tzinfo=None)
+
+        @classmethod
+        def now(cls, x=timezone.utc):
+            return cls.utcnow()
+
+        @classmethod
+        def utcfromtimestamp(cls, x):
+            return cls.utcnow()
+
+        @classmethod
+        def fromtimestamp(cls, x):
+            return cls.utcnow()
+
+    monkeypatch.setattr(datetime, 'datetime', mydatetime)
 
 
 @fixture
@@ -76,7 +115,13 @@ def file_metadata():
             'file_data': [
                 '{"c_pk": 1, "c_varchar": "1", "c_int": 1, "c_time": "04:00:00"}\n',
                 '{"c_pk": 2, "c_varchar": "2", "c_int": 2, "c_time": "07:15:00"}\n',
-                '{"c_pk": 3, "c_varchar": "3", "c_int": 3, "c_time": "23:00:03", "_sdc_deleted_at": "2019-02-10T15:51:50.215998Z"}\n']}}
+                '{"c_pk": 3, "c_varchar": "3", "c_int": 3, "c_time": "23:00:03"}\n']}}
+
+
+def clear_dir(dir_path):
+    for path in dir_path.iterdir():
+        path.unlink()
+    dir_path.rmdir()
 
 
 def test_emit_state(capsys, state):
@@ -85,6 +130,82 @@ def test_emit_state(capsys, state):
     emit_state(state)
     captured = capsys.readouterr()
     assert captured.out == json.dumps(state) + '\n'
+
+
+def test_add_metadata_columns_to_schema():
+    '''TEST : simple add_metadata_columns_to_schema call'''
+
+    assert add_metadata_columns_to_schema({
+        "type": "SCHEMA", "stream": "tap_dummy_test-test_table_one",
+        "schema": {
+            "properties": {
+                "c_pk": {
+                    "inclusion": "automatic", "minimum": -2147483648, "maximum": 2147483647,
+                    "type": ["null", "integer"]},
+                "c_varchar": {
+                    "inclusion": "available", "maxLength": 16, "type": ["null", "string"]},
+                "c_int": {
+                    "inclusion": "available", "minimum": -2147483648, "maximum": 2147483647,
+                    "type": ["null", "integer"]}},
+            "type": "object"},
+        "key_properties": ["c_pk"]}) == {
+            'type': 'SCHEMA', 'stream': 'tap_dummy_test-test_table_one',
+            'schema': {
+                'properties': {
+                    'c_pk': {
+                        'inclusion': 'automatic', 'minimum': -2147483648, 'maximum': 2147483647,
+                        'type': ['null', 'integer']},
+                    'c_varchar': {
+                        'inclusion': 'available', 'maxLength': 16, 'type': ['null', 'string']},
+                    'c_int': {
+                        'inclusion': 'available', 'minimum': -2147483648, 'maximum': 2147483647,
+                        'type': ['null', 'integer']},
+                    '_sdc_batched_at': {
+                        'type': ['null', 'string'], 'format': 'date-time'},
+                    '_sdc_deleted_at': {'type': ['null', 'string']},
+                    '_sdc_extracted_at': {'type': ['null', 'string'], 'format': 'date-time'},
+                    '_sdc_primary_key': {'type': ['null', 'string']},
+                    '_sdc_received_at': {'type': ['null', 'string'], 'format': 'date-time'},
+                    '_sdc_sequence': {'type': ['integer']},
+                    '_sdc_table_version': {'type': ['null', 'string']}},
+                'type': 'object'},
+            'key_properties': ['c_pk']}
+
+
+def test_add_metadata_values_to_record():
+    '''TEST : simple add_metadata_values_to_record call'''
+
+    assert add_metadata_values_to_record({
+        "type": "RECORD", "stream": "tap_dummy_test-test_table_one",
+        "record": {
+            "c_pk": 1, "c_varchar": "1", "c_int": 1, "c_float": 1.99},
+        "version": 1, "time_extracted": "2019-01-31T15:51:47.465408Z"}, {}, 1628713605.321056) == {
+            'c_pk': 1, 'c_varchar': '1', 'c_int': 1, 'c_float': 1.99,
+            '_sdc_batched_at': '2021-08-11T20:26:45.321056',
+            '_sdc_deleted_at': None,
+            '_sdc_extracted_at': '2019-01-31T15:51:47.465408Z',
+            '_sdc_primary_key': None,
+            '_sdc_received_at': '2021-08-11T20:26:45.321056',
+            '_sdc_sequence': 1628713605321,
+            '_sdc_table_version': 1}
+
+
+def test_remove_metadata_values_from_record():
+    '''TEST : simple remove_metadata_values_from_record call'''
+
+    assert remove_metadata_values_from_record({
+        "type": "RECORD", "stream": "tap_dummy_test-test_table_one",
+        "record": {
+            "c_pk": 1, "c_varchar": "1", "c_int": 1, "c_float": 1.99,
+            '_sdc_batched_at': '2021-08-11T21:16:22.420939',
+            '_sdc_deleted_at': None,
+            '_sdc_extracted_at': '2019-01-31T15:51:47.465408Z',
+            '_sdc_primary_key': None,
+            '_sdc_received_at': '2021-08-11T21:16:22.420939',
+            '_sdc_sequence': 1628712982421,
+            '_sdc_table_version': 1},
+        "version": 1, "time_extracted": "2019-01-31T15:51:47.465408Z"}) == {
+            'c_pk': 1, 'c_varchar': '1', 'c_int': 1, 'c_float': 1.99}
 
 
 def test_float_to_decimal():
@@ -155,9 +276,3 @@ def test_persist_lines(config, input_data, state, file_metadata):
         assert [item for item in input_file] == file_metadata['tap_dummy_test-test_table_three']['file_data']
 
     clear_dir(Path(config['temp_dir']))
-
-
-def clear_dir(dir_path):
-    for path in dir_path.iterdir():
-        path.unlink()
-    dir_path.rmdir()
