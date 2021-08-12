@@ -1,6 +1,6 @@
 '''Tests for the target_s3_jsonl.main module'''
 # Standard library imports
-from datetime import datetime as dt
+from datetime import datetime as dt, timezone
 
 # Third party imports
 from pytest import fixture
@@ -38,7 +38,7 @@ def patch_datetime_now(monkeypatch):
     class mydatetime:
         @classmethod
         def now(cls, x):
-            return dt(2021, 8, 11, 21, 26, 45, 321056).replace(tzinfo=None)
+            return dt(2021, 8, 11, 21, 26, 45, 321056, tzinfo=timezone.utc).replace(tzinfo=None)
 
     monkeypatch.setattr(datetime, 'datetime', mydatetime)
 
