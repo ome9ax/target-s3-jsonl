@@ -268,6 +268,3 @@ def test_persist_lines(config, input_data, state, file_metadata):
         assert [item for item in input_file] == file_metadata['tap_dummy_test-test_table_three']['file_data']
 
     clear_dir(Path(config['temp_dir']))
-
-
-# def test_persist_lines(patch_datetime_now, config, input_data, state, file_metadata):
