@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-__version__ = '0.0.5'
+__version__ = '0.0.5.1'
 
 import argparse
 import gzip
@@ -113,17 +113,14 @@ def get_target_key(message, naming_convention=None, timestamp=None, prefix=None,
 
 def save_file(file_data, compression):
     if any(file_data['file_data']):
-        if compression == 'gzip':
-            with open(file_data['file_name'], 'ab') as output_file:
-                with gzip.open(output_file, 'wt', encoding='utf-8') as output_data:
-                    output_data.writelines(file_data['file_data'])
-        if compression == 'lzma':
-            with open(file_data['file_name'], 'ab') as output_file:
-                with lzma.open(output_file, 'wt', encoding='utf-8') as output_data:
-                    output_data.writelines(file_data['file_data'])
-        else:
-            with open(file_data['file_name'], 'a', encoding='utf-8') as output_file:
+        if compression is not None:
+            with compression.open(file_data['file_name'], 'at', encoding='utf-8') as output_file:
                 output_file.writelines(file_data['file_data'])
+
+        else:
+            with open(file_data['file_name'], 'at', encoding='utf-8') as output_file:
+                output_file.writelines(file_data['file_data'])
+
         del file_data['file_data'][:]
         LOGGER.debug("'{}' file saved using compression '{}'".format(file_data['file_name'], compression or 'none'))
 
@@ -157,12 +154,12 @@ def persist_lines(messages, config):
     timezone = datetime.timezone(datetime.timedelta(hours=config.get('timezone_offset'))) if config.get('timezone_offset') is not None else None
 
     if f"{config.get('compression')}".lower() == 'gzip':
-        compression = 'gzip'
+        compression = gzip
         naming_convention_default = f"{naming_convention_default}.gz"
         naming_convention = f"{naming_convention}.gz"
 
     elif f"{config.get('compression')}".lower() == 'lzma':
-        compression = 'lzma'
+        compression = lzma
         naming_convention_default = f"{naming_convention_default}.xz"
         naming_convention = f"{naming_convention}.xz"
 

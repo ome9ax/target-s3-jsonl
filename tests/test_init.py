@@ -1,5 +1,6 @@
 '''Tests for the target_s3_jsonl.main module'''
 # Standard library imports
+from copy import deepcopy
 from datetime import datetime as dt, timezone
 
 # Third party imports
@@ -10,6 +11,8 @@ from target_s3_jsonl import (
     Decimal,
     datetime,
     Path,
+    gzip,
+    lzma,
     json,
     s3,
     emit_state,
@@ -231,12 +234,43 @@ def test_get_target_key():
 def test_save_file(config, file_metadata):
     '''TEST : simple save_file call'''
     Path(config['temp_dir']).mkdir(parents=True, exist_ok=True)
-    for _, file_info in file_metadata.items():
-        save_file(file_info, 'none')
 
-    assert not file_metadata['tap_dummy_test-test_table_one']['file_name'].exists()
-    assert not file_metadata['tap_dummy_test-test_table_two']['file_name'].exists()
-    assert file_metadata['tap_dummy_test-test_table_three']['file_name'].exists()
+    file_metadata_no_compression = deepcopy(file_metadata)
+    for _, file_info in file_metadata_no_compression.items():
+        save_file(file_info, None)
+
+    assert not file_metadata_no_compression['tap_dummy_test-test_table_one']['file_name'].exists()
+    assert not file_metadata_no_compression['tap_dummy_test-test_table_two']['file_name'].exists()
+    assert file_metadata_no_compression['tap_dummy_test-test_table_three']['file_name'].exists()
+
+    with open(file_metadata_no_compression['tap_dummy_test-test_table_three']['file_name'], 'rt', encoding='utf-8') as input_file:
+        assert [item for item in input_file] == file_metadata['tap_dummy_test-test_table_three']['file_data']
+
+    # NOTE: test gzip compression saved file
+    file_metadata_gzip = deepcopy(file_metadata)
+    for _, file_info in file_metadata_gzip.items():
+        file_info['file_name'] = file_info['file_name'].parent / f"{file_info['file_name'].name}.gz"
+        save_file(file_info, gzip)
+
+    assert not file_metadata_gzip['tap_dummy_test-test_table_one']['file_name'].exists()
+    assert not file_metadata_gzip['tap_dummy_test-test_table_two']['file_name'].exists()
+    assert file_metadata_gzip['tap_dummy_test-test_table_three']['file_name'].exists()
+
+    with gzip.open(file_metadata_gzip['tap_dummy_test-test_table_three']['file_name'], 'rt', encoding='utf-8') as input_file:
+        assert [item for item in input_file] == file_metadata['tap_dummy_test-test_table_three']['file_data']
+
+    # NOTE: test gzip compression saved file
+    file_metadata_lzma = deepcopy(file_metadata)
+    for _, file_info in file_metadata_lzma.items():
+        file_info['file_name'] = file_info['file_name'].parent / f"{file_info['file_name'].name}.xz"
+        save_file(file_info, lzma)
+
+    assert not file_metadata_lzma['tap_dummy_test-test_table_one']['file_name'].exists()
+    assert not file_metadata_lzma['tap_dummy_test-test_table_two']['file_name'].exists()
+    assert file_metadata_lzma['tap_dummy_test-test_table_three']['file_name'].exists()
+
+    with lzma.open(file_metadata_lzma['tap_dummy_test-test_table_three']['file_name'], 'rt', encoding='utf-8') as input_file:
+        assert [item for item in input_file] == file_metadata['tap_dummy_test-test_table_three']['file_data']
 
     clear_dir(Path(config['temp_dir']))
 
@@ -252,7 +286,7 @@ def test_upload_files(monkeypatch, config, file_metadata):
 
     Path(config['temp_dir']).mkdir(parents=True, exist_ok=True)
     for _, file_info in file_metadata.items():
-        save_file(file_info, 'none')
+        save_file(file_info, None)
 
     upload_files(file_metadata, config)
 
