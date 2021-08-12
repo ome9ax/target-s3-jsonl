@@ -1,6 +1,6 @@
 '''Tests for the target_s3_jsonl.main module'''
 # Standard library imports
-from datetime import datetime as dt
+from datetime import datetime as dt, timezone
 
 # Third party imports
 from pytest import fixture
@@ -37,8 +37,12 @@ def patch_datetime_now(monkeypatch):
 
     class mydatetime:
         @classmethod
-        def now(cls, x):
-            return dt(2021, 8, 11, 21, 26, 45, 321056, tzinfo=None)
+        def now(cls, x = timezone.utc):
+            return cls.utcnow()
+
+        @classmethod
+        def utcnow(cls):
+            return dt(2021, 8, 11, 21, 26, 45, 321056, tzinfo=timezone.utc).replace(tzinfo=None)
 
     monkeypatch.setattr(datetime, 'datetime', mydatetime)
 
@@ -167,7 +171,7 @@ def test_add_metadata_values_to_record(patch_datetime_now):
         "type": "RECORD", "stream": "tap_dummy_test-test_table_one",
         "record": {
             "c_pk": 1, "c_varchar": "1", "c_int": 1, "c_float": 1.99},
-        "version": 1, "time_extracted": "2019-01-31T15:51:47.465408Z"}, {}) == {
+        "version": 1, "time_extracted": "2019-01-31T15:51:47.465408Z"}, {}, datetime.datetime.utcnow()) == {
             'c_pk': 1, 'c_varchar': '1', 'c_int': 1, 'c_float': 1.99,
             '_sdc_batched_at': '2021-08-11T21:26:45.321056',
             '_sdc_deleted_at': None,

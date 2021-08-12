@@ -38,11 +38,12 @@ def add_metadata_columns_to_schema(schema_message):
     return schema_message
 
 
-def add_metadata_values_to_record(record_message, schema_message):
+def add_metadata_values_to_record(record_message, schema_message, now = None):
     '''Populate metadata _sdc columns from incoming record message
     The location of the required attributes are fixed in the stream
     '''
-    now = datetime.datetime.now(datetime.timezone.utc)
+    if now is None:
+        now = datetime.datetime.utcnow()
     record_message['record'].update({
         '_sdc_batched_at': now.isoformat(),
         '_sdc_deleted_at': record_message.get('record', {}).get('_sdc_deleted_at'),
@@ -66,7 +67,8 @@ def remove_metadata_values_from_record(record_message):
         '_sdc_received_at',
         '_sdc_sequence',
         '_sdc_table_version'}
-    [record_message['record'].pop(key, None) for key in keys]
+    for key in keys:
+        record_message['record'].pop(key, None)
 
     return record_message['record']
 
@@ -99,9 +101,9 @@ def get_target_key(message, naming_convention=None, timestamp=None, prefix=None)
     # replace simple tokens
     key = naming_convention.format(
         stream=message['stream'],
-        timestamp=timestamp if timestamp is not None else datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%S'),
-        date=datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d'),
-        time=datetime.datetime.now(datetime.timezone.utc).strftime('%H%M%S'))
+        timestamp=timestamp if timestamp is not None else datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%S'),
+        date=datetime.datetime.utcnow().strftime('%Y%m%d'),
+        time=datetime.datetime.utcnow().strftime('%H%M%S'))
 
     # NOTE: Replace dynamic tokens
     # TODO: replace dynamic tokens such as {date(<format>)} with the date formatted as requested in <format>
@@ -175,7 +177,8 @@ def persist_lines(messages, config):
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     file_data = {}
-    now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%S')
+    now = datetime.datetime.utcnow()
+    now_formatted = now.strftime('%Y%m%dT%H%M%S')
 
     for message in messages:
         try:
@@ -205,7 +208,7 @@ def persist_lines(messages, config):
                     raise ex
 
             if config.get('add_metadata_columns'):
-                record_to_load = add_metadata_values_to_record(o, {})
+                record_to_load = add_metadata_values_to_record(o, {}, now)
             else:
                 record_to_load = remove_metadata_values_from_record(o)
 
@@ -243,9 +246,9 @@ def persist_lines(messages, config):
                     'target_key': get_target_key(
                         o,
                         naming_convention=naming_convention,
-                        timestamp=now,
+                        timestamp=now_formatted,
                         prefix=config.get('s3_key_prefix', '')),
-                    'file_name': temp_dir / naming_convention_default.format(stream=stream, timestamp=now),
+                    'file_name': temp_dir / naming_convention_default.format(stream=stream, timestamp=now_formatted),
                     'file_data': []}
 
         elif message_type == 'ACTIVATE_VERSION':
