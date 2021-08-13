@@ -15,15 +15,15 @@ from target_s3_jsonl import (
     lzma,
     json,
     s3,
+    add_metadata_columns_to_schema,
+    add_metadata_values_to_record,
+    remove_metadata_values_from_record,
     emit_state,
     float_to_decimal,
     get_target_key,
     save_file,
     upload_files,
     persist_lines,
-    add_metadata_columns_to_schema,
-    add_metadata_values_to_record,
-    remove_metadata_values_from_record
 )
 
 
@@ -36,7 +36,7 @@ with open(Path('tests', 'resources', 'messages-with-three-streams.json'), 'r', e
 
 
 @fixture
-def patch_datetime_now(monkeypatch):
+def patch_datetime(monkeypatch):
 
     class mydatetime:
         @classmethod
@@ -235,42 +235,21 @@ def test_save_file(config, file_metadata):
     '''TEST : simple save_file call'''
     Path(config['temp_dir']).mkdir(parents=True, exist_ok=True)
 
-    file_metadata_no_compression = deepcopy(file_metadata)
-    for _, file_info in file_metadata_no_compression.items():
-        save_file(file_info, None)
+    # NOTE: test compression saved file
+    for open_func, extension in {open: '', gzip.open: '.gz', lzma.open: '.xz'}.items():
+        file_metadata_copy = deepcopy(file_metadata)
+        for _, file_info in file_metadata_copy.items():
+            file_info['file_name'] = file_info['file_name'].parent / f"{file_info['file_name'].name}{extension}"
+            save_file(file_info, open_func)
 
-    assert not file_metadata_no_compression['tap_dummy_test-test_table_one']['file_name'].exists()
-    assert not file_metadata_no_compression['tap_dummy_test-test_table_two']['file_name'].exists()
-    assert file_metadata_no_compression['tap_dummy_test-test_table_three']['file_name'].exists()
+        assert not file_metadata_copy['tap_dummy_test-test_table_one']['file_name'].exists()
+        assert not file_metadata_copy['tap_dummy_test-test_table_two']['file_name'].exists()
+        assert file_metadata_copy['tap_dummy_test-test_table_three']['file_name'].exists()
 
-    with open(file_metadata_no_compression['tap_dummy_test-test_table_three']['file_name'], 'rt', encoding='utf-8') as input_file:
-        assert [item for item in input_file] == file_metadata['tap_dummy_test-test_table_three']['file_data']
-
-    # NOTE: test gzip compression saved file
-    file_metadata_gzip = deepcopy(file_metadata)
-    for _, file_info in file_metadata_gzip.items():
-        file_info['file_name'] = file_info['file_name'].parent / f"{file_info['file_name'].name}.gz"
-        save_file(file_info, gzip)
-
-    assert not file_metadata_gzip['tap_dummy_test-test_table_one']['file_name'].exists()
-    assert not file_metadata_gzip['tap_dummy_test-test_table_two']['file_name'].exists()
-    assert file_metadata_gzip['tap_dummy_test-test_table_three']['file_name'].exists()
-
-    with gzip.open(file_metadata_gzip['tap_dummy_test-test_table_three']['file_name'], 'rt', encoding='utf-8') as input_file:
-        assert [item for item in input_file] == file_metadata['tap_dummy_test-test_table_three']['file_data']
-
-    # NOTE: test gzip compression saved file
-    file_metadata_lzma = deepcopy(file_metadata)
-    for _, file_info in file_metadata_lzma.items():
-        file_info['file_name'] = file_info['file_name'].parent / f"{file_info['file_name'].name}.xz"
-        save_file(file_info, lzma)
-
-    assert not file_metadata_lzma['tap_dummy_test-test_table_one']['file_name'].exists()
-    assert not file_metadata_lzma['tap_dummy_test-test_table_two']['file_name'].exists()
-    assert file_metadata_lzma['tap_dummy_test-test_table_three']['file_name'].exists()
-
-    with lzma.open(file_metadata_lzma['tap_dummy_test-test_table_three']['file_name'], 'rt', encoding='utf-8') as input_file:
-        assert [item for item in input_file] == file_metadata['tap_dummy_test-test_table_three']['file_data']
+        with open_func(file_metadata_copy['tap_dummy_test-test_table_three']['file_name'], 'rt', encoding='utf-8') as input_file:
+            assert [item for item in input_file] == file_metadata['tap_dummy_test-test_table_three']['file_data']
+        
+        del file_metadata_copy
 
     clear_dir(Path(config['temp_dir']))
 
@@ -286,7 +265,7 @@ def test_upload_files(monkeypatch, config, file_metadata):
 
     Path(config['temp_dir']).mkdir(parents=True, exist_ok=True)
     for _, file_info in file_metadata.items():
-        save_file(file_info, None)
+        save_file(file_info, open)
 
     upload_files(file_metadata, config)
 

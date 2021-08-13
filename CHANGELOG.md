@@ -1,5 +1,11 @@
 # Change Log
 
+## [v0.0.5](https://github.com/ome9ax/target-s3-jsonl/tree/v0.0.5) (2021-08-12)
+[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/tree/v0.0.4...v0.0.5)
+
+**New features:**
+- replace `io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')` with `sys.stdin` as it's already natively defined as `<_io.TextIOWrapper name='<stdin>' mode='r' encoding='utf-8'>`
+
 ## [v0.0.5.1](https://github.com/ome9ax/target-s3-jsonl/tree/v0.0.5.1) (2021-08-09)
 [Full Changelog](https://github.com/ome9ax/target-s3-jsonl/tree/v0.0.5...v0.0.5.1)
 
