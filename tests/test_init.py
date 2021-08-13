@@ -291,7 +291,6 @@ def test_persist_lines(config, input_data, invalid_row_data, invalid_order_data,
     with open(output_file_metadata['tap_dummy_test-test_table_three']['file_name'], 'r', encoding='utf-8') as input_file:
         assert [item for item in input_file] == file_metadata['tap_dummy_test-test_table_three']['file_data']
 
-
     for compression, extension in {'gzip': '.gz', 'lzma': '.xz', 'none': ''}.items():
         clear_dir(Path(config['temp_dir']))
         config_copy = deepcopy(config)

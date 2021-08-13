@@ -181,10 +181,10 @@ def persist_lines(messages, config):
             raise
         message_type = o['type']
         if message_type == 'RECORD':
-            if 'stream' not in o: # pragma: no cover
+            if 'stream' not in o:  # pragma: no cover
                 raise Exception("Line is missing required key 'stream': {}".format(message))
             stream = o['stream']
-            if stream not in schemas: # pragma: no cover
+            if stream not in schemas:  # pragma: no cover
                 raise Exception('A record for stream {} was encountered before a corresponding schema'.format(stream))
 
             # NOTE: Validate record
@@ -192,7 +192,7 @@ def persist_lines(messages, config):
             try:
                 validators[stream].validate(float_to_decimal(record_to_load))
             except Exception as ex:
-                if type(ex).__name__ == "InvalidOperation": # pragma: no cover
+                if type(ex).__name__ == "InvalidOperation":  # pragma: no cover
                     LOGGER.error(
                         "Data validation failed and cannot load to destination. RECORD: {}\n"
                         "'multipleOf' validations that allows long precisions are not supported"
@@ -200,7 +200,7 @@ def persist_lines(messages, config):
                         .format(record_to_load))
                     raise ex
 
-            if config.get('add_metadata_columns'): # pragma: no cover
+            if config.get('add_metadata_columns'):  # pragma: no cover
                 record_to_load = add_metadata_values_to_record(o, {}, now.timestamp())
             else:
                 record_to_load = remove_metadata_values_from_record(o)
@@ -209,7 +209,7 @@ def persist_lines(messages, config):
 
             # NOTE: write temporary file
             #       Use 64Mb default memory buffer
-            if sys.getsizeof(file_data[stream]['file_data']) > config.get('memory_buffer', 64e6): # pragma: no cover
+            if sys.getsizeof(file_data[stream]['file_data']) > config.get('memory_buffer', 64e6):  # pragma: no cover
                 save_file(file_data[stream], open_func)
 
             state = None
@@ -217,24 +217,24 @@ def persist_lines(messages, config):
             LOGGER.debug('Setting state to {}'.format(o['value']))
             state = o['value']
         elif message_type == 'SCHEMA':
-            if 'stream' not in o: # pragma: no cover
+            if 'stream' not in o:  # pragma: no cover
                 raise Exception("Line is missing required key 'stream': {}".format(message))
             stream = o['stream']
 
-            if config.get('add_metadata_columns'): # pragma: no cover
+            if config.get('add_metadata_columns'):  # pragma: no cover
                 schemas[stream] = add_metadata_columns_to_schema(o)
             else:
                 schemas[stream] = float_to_decimal(o['schema'])
 
             validators[stream] = Draft4Validator(schemas[stream], format_checker=FormatChecker())
 
-            if 'key_properties' not in o: # pragma: no cover
+            if 'key_properties' not in o:  # pragma: no cover
                 raise Exception('key_properties field is required')
             key_properties[stream] = o['key_properties']
             LOGGER.debug('Setting schema for {}'.format(stream))
 
             # NOTE: get the s3 file key
-            if stream not in file_data: # pragma: no cover
+            if stream not in file_data:  # pragma: no cover
                 file_data[stream] = {
                     'target_key': get_target_key(
                         o,
@@ -247,7 +247,7 @@ def persist_lines(messages, config):
 
         elif message_type == 'ACTIVATE_VERSION':
             LOGGER.debug('ACTIVATE_VERSION {}'.format(message))
-        else: # pragma: no cover
+        else:  # pragma: no cover
             LOGGER.warning('Unknown message type {} in message {}'.format(o['type'], o))
 
     for _, file_info in file_data.items():
@@ -278,5 +278,5 @@ def main():
     LOGGER.debug('Exiting normally')
 
 
-if __name__ == '__main__': # pragma: no cover
+if __name__ == '__main__':  # pragma: no cover
     main()
