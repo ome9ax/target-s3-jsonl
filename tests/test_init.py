@@ -248,7 +248,7 @@ def test_save_file(config, file_metadata):
 
         with open_func(file_metadata_copy['tap_dummy_test-test_table_three']['file_name'], 'rt', encoding='utf-8') as input_file:
             assert [item for item in input_file] == file_metadata['tap_dummy_test-test_table_three']['file_data']
-        
+
         del file_metadata_copy
 
     clear_dir(Path(config['temp_dir']))
