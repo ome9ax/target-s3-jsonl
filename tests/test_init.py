@@ -5,6 +5,8 @@ from datetime import datetime as dt, timezone
 
 # Third party imports
 from pytest import fixture, raises
+import boto3
+from moto import mock_s3
 
 # Package imports
 from target_s3_jsonl import (
@@ -257,18 +259,16 @@ def test_save_file(config, file_metadata):
     clear_dir(Path(config['temp_dir']))
 
 
+@mock_s3
 def test_upload_files(monkeypatch, config, file_metadata):
     '''TEST : simple upload_files call'''
-
-    monkeypatch.setattr(s3, 'create_client', lambda config: None)
-
-    monkeypatch.setattr(
-        s3, 'upload_file', lambda filename, s3_client, bucket, s3_key,
-        encryption_type=None, encryption_key=None: None)
 
     Path(config['temp_dir']).mkdir(parents=True, exist_ok=True)
     for _, file_info in file_metadata.items():
         save_file(file_info, open)
+
+    conn = boto3.resource('s3', region_name='us-east-1')
+    conn.create_bucket(Bucket=config['s3_bucket'])
 
     upload_files(file_metadata, config)
 
@@ -316,6 +316,7 @@ def test_persist_lines(config, input_data, invalid_row_data, invalid_order_data,
         output_state, output_file_metadata = persist_lines(invalid_order_data, config)
 
 
+@mock_s3
 def test_main(monkeypatch, capsys, patch_datetime, input_data, config, state, file_metadata):
     '''TEST : simple persist_lines call'''
 
