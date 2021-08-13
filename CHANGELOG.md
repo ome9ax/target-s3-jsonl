@@ -1,6 +1,7 @@
 # Change Log
 
-## [HEAD]
+## [v0.0.5.2](https://github.com/ome9ax/target-s3-jsonl/tree/v0.0.5.2) (2021-08-13)
+[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/tree/v0.0.5.1...v0.0.5.2)
 
 ### New features:
 - replace `io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')` with `sys.stdin` as it's already natively defined as `<_io.TextIOWrapper name='<stdin>' mode='r' encoding='utf-8'>`
@@ -36,6 +37,7 @@
 - [[Metadata] manage tap Metadata _sdc columns according to the stitch documentation](https://github.com/ome9ax/target-s3-jsonl/pull/9)
 
 ## [v0.0.4](https://github.com/ome9ax/target-s3-jsonl/tree/v0.0.4) (2021-08-09)
+[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/tree/v0.0.0...v0.0.4)
 
 ### New features:
 - Initial release
