@@ -4,16 +4,18 @@ from copy import deepcopy
 from datetime import datetime as dt, timezone
 
 # Third party imports
-from pytest import fixture
+from pytest import fixture, raises
 
 # Package imports
 from target_s3_jsonl import (
+    sys,
     Decimal,
     datetime,
-    Path,
+    argparse,
     gzip,
     lzma,
     json,
+    Path,
     s3,
     add_metadata_columns_to_schema,
     add_metadata_values_to_record,
@@ -24,15 +26,8 @@ from target_s3_jsonl import (
     save_file,
     upload_files,
     persist_lines,
+    main,
 )
-
-
-with open(Path('tests', 'resources', 'messages-with-three-streams.json'), 'r', encoding='utf-8') as input_file, \
-    open(Path('tests', 'resources', 'invalid-json.json'), 'r', encoding='utf-8') as invalid_row_file, \
-        open(Path('tests', 'resources', 'invalid-message-order.json'), 'r', encoding='utf-8') as invalid_order_file:
-    INPUT_DATA = [item for item in input_file]
-    INVALID_ROW_DATA = [item for item in invalid_row_file]
-    INVALID_ORDER_DATA = [item for item in invalid_order_file]
 
 
 @fixture
@@ -41,7 +36,7 @@ def patch_datetime(monkeypatch):
     class mydatetime:
         @classmethod
         def utcnow(cls):
-            return dt.fromtimestamp(1628713605.321056, tz=timezone.utc).replace(tzinfo=None)
+            return dt.fromtimestamp(1628663978.321056, tz=timezone.utc).replace(tzinfo=None)
 
         @classmethod
         def now(cls, x=timezone.utc):
@@ -70,21 +65,24 @@ def config():
 def input_data():
     '''Use custom parameters set'''
 
-    return INPUT_DATA
+    with open(Path('tests', 'resources', 'messages-with-three-streams.json'), 'r', encoding='utf-8') as input_file:
+        return [item for item in input_file]
 
 
 @fixture
 def invalid_row_data():
     '''Use custom parameters set'''
 
-    return INVALID_ROW_DATA
+    with open(Path('tests', 'resources', 'invalid-json.json'), 'r', encoding='utf-8') as input_file:
+        return [item for item in input_file]
 
 
 @fixture
 def invalid_order_data():
     '''Use custom parameters set'''
 
-    return INVALID_ORDER_DATA
+    with open(Path('tests', 'resources', 'invalid-message-order.json'), 'r', encoding='utf-8') as input_file:
+        return [item for item in input_file]
 
 
 @fixture
@@ -105,16 +103,16 @@ def file_metadata():
 
     return {
         'tap_dummy_test-test_table_one': {
-            'target_key': 'tap_dummy_test-test_table_one-20210811T063938.jsonl',
-            'file_name': Path('tests/output/tap_dummy_test-test_table_one-20210811T063938.jsonl'),
+            'target_key': 'tap_dummy_test-test_table_one-20210811T063938.json',
+            'file_name': Path('tests/output/tap_dummy_test-test_table_one-20210811T063938.json'),
             'file_data': []},
         'tap_dummy_test-test_table_two': {
-            'target_key': 'tap_dummy_test-test_table_two-20210811T063938.jsonl',
-            'file_name': Path('tests/output/tap_dummy_test-test_table_two-20210811T063938.jsonl'),
+            'target_key': 'tap_dummy_test-test_table_two-20210811T063938.json',
+            'file_name': Path('tests/output/tap_dummy_test-test_table_two-20210811T063938.json'),
             'file_data': []},
         'tap_dummy_test-test_table_three': {
-            'target_key': 'tap_dummy_test-test_table_three-20210811T063938.jsonl',
-            'file_name': Path('tests/output/tap_dummy_test-test_table_three-20210811T063938.jsonl'),
+            'target_key': 'tap_dummy_test-test_table_three-20210811T063938.json',
+            'file_name': Path('tests/output/tap_dummy_test-test_table_three-20210811T063938.json'),
             'file_data': [
                 '{"c_pk": 1, "c_varchar": "1", "c_int": 1, "c_time": "04:00:00"}\n',
                 '{"c_pk": 2, "c_varchar": "2", "c_int": 2, "c_time": "07:15:00"}\n',
@@ -133,6 +131,10 @@ def test_emit_state(capsys, state):
     emit_state(state)
     captured = capsys.readouterr()
     assert captured.out == json.dumps(state) + '\n'
+
+    emit_state(None)
+    captured = capsys.readouterr()
+    assert captured.out == ''
 
 
 def test_add_metadata_columns_to_schema():
@@ -228,7 +230,8 @@ def test_float_to_decimal():
 def test_get_target_key():
     '''TEST : simple get_target_key call'''
 
-    assert get_target_key({'stream': 'dummy_stream'}, naming_convention='{stream}-{timestamp}.jsonl', timestamp='99') == 'dummy_stream-99.jsonl'
+    assert get_target_key({'stream': 'dummy_stream'}, timestamp='99') == 'dummy_stream-99.json'
+    assert get_target_key({'stream': 'dummy_stream'}, naming_convention='xxx-{stream}-{timestamp}.jsonl', timestamp='99') == 'xxx-dummy_stream-99.jsonl'
 
 
 def test_save_file(config, file_metadata):
@@ -274,18 +277,109 @@ def test_upload_files(monkeypatch, config, file_metadata):
     clear_dir(Path(config['temp_dir']))
 
 
-def test_persist_lines(config, input_data, state, file_metadata):
+def test_persist_lines(config, input_data, invalid_row_data, invalid_order_data, state, file_metadata):
     '''TEST : simple persist_lines call'''
     output_state, output_file_metadata = persist_lines(input_data, config)
     file_paths = set(path for path in Path(config['temp_dir']).iterdir())
 
-    assert len(file_paths) == 3
-
     assert output_state == state
+
+    assert len(file_paths) == 3
 
     assert len(set(str(values['file_name']) for _, values in output_file_metadata.items()) - set(str(path) for path in file_paths)) == 0
 
     with open(output_file_metadata['tap_dummy_test-test_table_three']['file_name'], 'r', encoding='utf-8') as input_file:
         assert [item for item in input_file] == file_metadata['tap_dummy_test-test_table_three']['file_data']
 
+
+    for compression, extension in {'gzip': '.gz', 'lzma': '.xz', 'none': ''}.items():
+        clear_dir(Path(config['temp_dir']))
+        config_copy = deepcopy(config)
+        config_copy['compression'] = compression
+        output_state, output_file_metadata = persist_lines(input_data, config_copy)
+        file_paths = set(path for path in Path(config['temp_dir']).iterdir())
+
+        assert len(file_paths) == 3
+
+        assert len(set(str(values['file_name']) for _, values in output_file_metadata.items()) - set(str(path) for path in file_paths)) == 0
+
     clear_dir(Path(config['temp_dir']))
+
+    with raises(NotImplementedError):
+        config_copy = deepcopy(config)
+        config_copy['compression'] = 'dummy'
+        output_state, output_file_metadata = persist_lines(input_data, config_copy)
+
+    with raises(json.decoder.JSONDecodeError):
+        output_state, output_file_metadata = persist_lines(invalid_row_data, config)
+
+    with raises(Exception):
+        output_state, output_file_metadata = persist_lines(invalid_order_data, config)
+
+
+def test_main(monkeypatch, capsys, patch_datetime, input_data, config, state, file_metadata):
+    '''TEST : simple persist_lines call'''
+
+    class argument_parser:
+
+        def __init__(self):
+            self.config = str(Path('tests', 'resources', 'config.json'))
+
+        def add_argument(self, x, y, help='Dummy config file', required=False):
+            pass
+
+        def parse_args(self):
+            return self
+
+    monkeypatch.setattr(argparse, 'ArgumentParser', argument_parser)
+
+    monkeypatch.setattr(sys, 'stdin', input_data)
+
+    main()
+    captured = capsys.readouterr()
+    assert captured.out == json.dumps(state) + '\n'
+
+    for _, file_info in file_metadata.items():
+        assert file_info['file_name'].exists()
+
+    clear_dir(Path(config['temp_dir']))
+
+    with raises(Exception):
+
+        class argument_parser:
+
+            def __init__(self):
+                self.config = str(Path('tests', 'resources', 'config_no_bucket.json'))
+
+            def add_argument(self, x, y, help='Dummy config file', required=False):
+                pass
+
+            def parse_args(self):
+                return self
+
+        monkeypatch.setattr(argparse, 'ArgumentParser', argument_parser)
+
+        main()
+
+    class argument_parser:
+
+        def __init__(self):
+            self.config = str(Path('tests', 'resources', 'config_local_false.json'))
+
+        def add_argument(self, x, y, help='Dummy config file', required=False):
+            pass
+
+        def parse_args(self):
+            return self
+
+    monkeypatch.setattr(argparse, 'ArgumentParser', argument_parser)
+
+    monkeypatch.setattr(s3, 'create_client', lambda config: None)
+
+    monkeypatch.setattr(
+        s3, 'upload_file', lambda filename, s3_client, bucket, s3_key,
+        encryption_type=None, encryption_key=None: None)
+
+    main()
+    captured = capsys.readouterr()
+    assert captured.out == json.dumps(state) + '\n'
