@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
-__version__ = '0.0.5.1'
+__version__ = '0.0.5.2'
 
 import argparse
 import gzip
 import lzma
-import io
 import json
 from pathlib import Path
 import sys
@@ -96,7 +95,7 @@ def float_to_decimal(value):
 def get_target_key(message, naming_convention=None, timestamp=None, prefix=None, timezone=None):
     '''Creates and returns an S3 key for the message'''
     if not naming_convention:
-        naming_convention = '{stream}-{timestamp}.jsonl'
+        naming_convention = '{stream}-{timestamp}.json'
 
     # replace simple tokens
     key = naming_convention.format(
@@ -111,18 +110,13 @@ def get_target_key(message, naming_convention=None, timestamp=None, prefix=None,
     return str(Path(key).parent / f'{prefix}{Path(key).name}') if prefix else key
 
 
-def save_file(file_data, compression):
+def save_file(file_data, open_func):
     if any(file_data['file_data']):
-        if compression is not None:
-            with compression.open(file_data['file_name'], 'at', encoding='utf-8') as output_file:
-                output_file.writelines(file_data['file_data'])
-
-        else:
-            with open(file_data['file_name'], 'at', encoding='utf-8') as output_file:
-                output_file.writelines(file_data['file_data'])
+        with open_func(file_data['file_name'], 'at', encoding='utf-8') as output_file:
+            output_file.writelines(file_data['file_data'])
 
         del file_data['file_data'][:]
-        LOGGER.debug("'{}' file saved using compression '{}'".format(file_data['file_name'], compression or 'none'))
+        LOGGER.debug("'{}' file saved using open_func '{}'".format(file_data['file_name'], open_func.__name__))
 
 
 def upload_files(file_data, config):
@@ -148,18 +142,18 @@ def persist_lines(messages, config):
     key_properties = {}
     validators = {}
 
-    naming_convention_default = '{stream}-{timestamp}.jsonl'
+    naming_convention_default = '{stream}-{timestamp}.json'
     naming_convention = config.get('naming_convention') or naming_convention_default
-    compression = None
+    open_func = open
     timezone = datetime.timezone(datetime.timedelta(hours=config.get('timezone_offset'))) if config.get('timezone_offset') is not None else None
 
     if f"{config.get('compression')}".lower() == 'gzip':
-        compression = gzip
+        open_func = gzip.open
         naming_convention_default = f"{naming_convention_default}.gz"
         naming_convention = f"{naming_convention}.gz"
 
     elif f"{config.get('compression')}".lower() == 'lzma':
-        compression = lzma
+        open_func = lzma.open
         naming_convention_default = f"{naming_convention_default}.xz"
         naming_convention = f"{naming_convention}.xz"
 
@@ -216,7 +210,7 @@ def persist_lines(messages, config):
             # NOTE: write temporary file
             #       Use 64Mb default memory buffer
             if sys.getsizeof(file_data[stream]['file_data']) > config.get('memory_buffer', 64e6):
-                save_file(file_data[stream], compression)
+                save_file(file_data[stream], open_func)
 
             state = None
         elif message_type == 'STATE':
@@ -257,7 +251,7 @@ def persist_lines(messages, config):
             LOGGER.warning('Unknown message type {} in message {}'.format(o['type'], o))
 
     for _, file_info in file_data.items():
-        save_file(file_info, compression)
+        save_file(file_info, open_func)
 
     return state, file_data
 
@@ -274,8 +268,7 @@ def main():
     if missing_params:
         raise Exception('Config is missing required keys: {}'.format(missing_params))
 
-    with io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8') as input_messages:
-        state, file_data = persist_lines(input_messages, config)
+    state, file_data = persist_lines(sys.stdin, config)
 
     # NOTE: Upload created files to S3
     if not config.get('local', False):
