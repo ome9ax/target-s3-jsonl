@@ -268,7 +268,6 @@ def main():
     if missing_params:
         raise Exception('Config is missing required keys: {}'.format(missing_params))
 
-    # NOTE: `sys.stdin` is natively defined as `<_io.TextIOWrapper name='<stdin>' mode='r' encoding='utf-8'>`
     state, file_data = persist_lines(sys.stdin, config)
 
     # NOTE: Upload created files to S3
