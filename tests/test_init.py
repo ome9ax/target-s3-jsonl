@@ -18,7 +18,6 @@ from target_s3_jsonl import (
     lzma,
     json,
     Path,
-    s3,
     add_metadata_columns_to_schema,
     add_metadata_values_to_record,
     remove_metadata_values_from_record,
