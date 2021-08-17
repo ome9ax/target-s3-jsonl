@@ -189,7 +189,17 @@ def persist_lines(messages, config):
 
             # NOTE: Validate record
             record_to_load = o['record']
-            validators[stream].validate(float_to_decimal(record_to_load))
+            try:
+                validators[stream].validate(float_to_decimal(record_to_load))
+            except Exception as ex:
+                # NOTE: let anything but 'InvalidOperation' raised Exception slip by
+                if type(ex).__name__ == "InvalidOperation":  # TODO pragma: no cover
+                    LOGGER.error(
+                        "Data validation failed and cannot load to destination. RECORD: {}\n"
+                        "'multipleOf' validations that allows long precisions are not supported"
+                        " (i.e. with 15 digits or more). Try removing 'multipleOf' methods from JSON schema."
+                        .format(record_to_load))
+                    raise ex
 
             if config.get('add_metadata_columns'):
                 record_to_load = add_metadata_values_to_record(o, {}, now.timestamp())
