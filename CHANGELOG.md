@@ -1,5 +1,14 @@
 # Change Log
 
+## [0.0.6](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.6) (2021-08-17)
+[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.5.2...0.0.6)
+
+### Closed issues:
+- Much more specs and tests, coverage increased to `96.91%`
+
+### Merged pull requests:
+- [[coverage] bump version 0.0.6 changelog update: Much more specs and tests, coverage increased to `96.91%`](https://github.com/ome9ax/target-s3-jsonl/pull/15)
+
 ## [0.0.5.2](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.5.2) (2021-08-13)
 [Full Changelog](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.5.1...0.0.5.2)
 
