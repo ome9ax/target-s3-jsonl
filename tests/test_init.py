@@ -18,7 +18,6 @@ from target_s3_jsonl import (
     lzma,
     json,
     Path,
-    s3,
     add_metadata_columns_to_schema,
     add_metadata_values_to_record,
     remove_metadata_values_from_record,
@@ -41,7 +40,7 @@ def patch_datetime(monkeypatch):
             return dt.fromtimestamp(1628663978.321056, tz=timezone.utc).replace(tzinfo=None)
 
         @classmethod
-        def now(cls, x=timezone.utc):
+        def now(cls, x=timezone.utc, tz=None):
             return cls.utcnow()
 
         @classmethod
@@ -49,10 +48,31 @@ def patch_datetime(monkeypatch):
             return cls.utcnow()
 
         @classmethod
-        def fromtimestamp(cls, x):
+        def fromtimestamp(cls, x, format):
             return cls.utcnow()
 
+        @classmethod
+        def strptime(cls, x, format):
+            return dt.strptime(x, format)
+
     monkeypatch.setattr(datetime, 'datetime', mydatetime)
+
+
+@fixture
+def patch_argument_parser(monkeypatch):
+
+    class argument_parser:
+
+        def __init__(self):
+            self.config = str(Path('tests', 'resources', 'config.json'))
+
+        def add_argument(self, x, y, help='Dummy config file', required=False):
+            pass
+
+        def parse_args(self):
+            return self
+
+    monkeypatch.setattr(argparse, 'ArgumentParser', argument_parser)
 
 
 @fixture
@@ -277,7 +297,7 @@ def test_upload_files(monkeypatch, config, file_metadata):
     clear_dir(Path(config['temp_dir']))
 
 
-def test_persist_lines(config, input_data, invalid_row_data, invalid_order_data, state, file_metadata):
+def test_persist_lines(caplog, config, input_data, invalid_row_data, invalid_order_data, state, file_metadata):
     '''TEST : simple persist_lines call'''
     output_state, output_file_metadata = persist_lines(input_data, config)
     file_paths = set(path for path in Path(config['temp_dir']).iterdir())
@@ -304,6 +324,28 @@ def test_persist_lines(config, input_data, invalid_row_data, invalid_order_data,
 
     clear_dir(Path(config['temp_dir']))
 
+    config_copy = deepcopy(config)
+    config_copy['add_metadata_columns'] = True
+    output_state, output_file_metadata = persist_lines(input_data, config_copy)
+
+    assert output_state == state
+
+    clear_dir(Path(config['temp_dir']))
+
+    config_copy = deepcopy(config)
+    config_copy['memory_buffer'] = 9
+    output_state, output_file_metadata = persist_lines(input_data, config_copy)
+
+    assert output_state == state
+
+    clear_dir(Path(config['temp_dir']))
+
+    dummy_type = '{"type": "DUMMY", "value": {"currently_syncing": "tap_dummy_test-test_table_one"}}'
+    output_state, output_file_metadata = persist_lines([dummy_type] + input_data, config)
+
+    assert 'WARNING  root:__init__.py:251 Unknown message type "{}" in message "{}"'.format(
+        json.loads(dummy_type)['type'], dummy_type.replace('"', "'")) + '\n' == caplog.text
+
     with raises(NotImplementedError):
         config_copy = deepcopy(config)
         config_copy['compression'] = 'dummy'
@@ -315,15 +357,67 @@ def test_persist_lines(config, input_data, invalid_row_data, invalid_order_data,
     with raises(Exception):
         output_state, output_file_metadata = persist_lines(invalid_order_data, config)
 
+    record = {
+        "type": "RECORD",
+        "stream": "tap_dummy_test-test_table_one",
+        "record": {"c_pk": 1, "c_varchar": "1", "c_int": 1},
+        "version": 1,
+        "time_extracted": "2019-01-31T15:51:47.465408Z"}
+
+    with raises(Exception):
+        dummy_input_data = deepcopy(input_data)
+        dummy_record = deepcopy(record)
+        dummy_record.pop('stream')
+        dummy_input_data.insert(3, json.dumps(dummy_record))
+        output_state, output_file_metadata = persist_lines(dummy_input_data, config)
+
+    schema = {
+        "type": "SCHEMA",
+        "stream": "tap_dummy_test-test_table_one",
+        "schema": {
+            "properties": {
+                "c_pk": {"inclusion": "automatic", "minimum": -2147483648, "maximum": 2147483647, "type": ["null", "integer"]},
+                "c_varchar": {"inclusion": "available", "maxLength": 16, "type": ["null", "string"]},
+                "c_int": {"inclusion": "available", "minimum": -2147483648, "maximum": 2147483647, "type": ["null", "integer"]}},
+            "type": "object"},
+        "key_properties": ["c_pk"]}
+
+    with raises(Exception):
+        dummy_input_data = deepcopy(input_data)
+        dummy_schema = deepcopy(schema)
+        dummy_schema.pop('stream')
+        dummy_input_data.insert(1, json.dumps(dummy_schema))
+        output_state, output_file_metadata = persist_lines(dummy_input_data, config)
+
+    with raises(Exception):
+        dummy_input_data = deepcopy(input_data)
+        dummy_schema = deepcopy(schema)
+        dummy_schema.pop('key_properties')
+        dummy_input_data.insert(1, json.dumps(dummy_schema))
+        output_state, output_file_metadata = persist_lines(dummy_input_data, config)
+
 
 @mock_s3
-def test_main(monkeypatch, capsys, patch_datetime, input_data, config, state, file_metadata):
+def test_main(monkeypatch, capsys, patch_datetime, patch_argument_parser, input_data, config, state, file_metadata):
     '''TEST : simple persist_lines call'''
+
+    monkeypatch.setattr(sys, 'stdin', input_data)
+
+    conn = boto3.resource('s3', region_name='us-east-1')
+    conn.create_bucket(Bucket=config['s3_bucket'])
+
+    main()
+
+    captured = capsys.readouterr()
+    assert captured.out == json.dumps(state) + '\n'
+
+    for _, file_info in file_metadata.items():
+        assert not file_info['file_name'].exists()
 
     class argument_parser:
 
         def __init__(self):
-            self.config = str(Path('tests', 'resources', 'config.json'))
+            self.config = str(Path('tests', 'resources', 'config_local.json'))
 
         def add_argument(self, x, y, help='Dummy config file', required=False):
             pass
@@ -333,9 +427,8 @@ def test_main(monkeypatch, capsys, patch_datetime, input_data, config, state, fi
 
     monkeypatch.setattr(argparse, 'ArgumentParser', argument_parser)
 
-    monkeypatch.setattr(sys, 'stdin', input_data)
-
     main()
+
     captured = capsys.readouterr()
     assert captured.out == json.dumps(state) + '\n'
 
@@ -360,26 +453,3 @@ def test_main(monkeypatch, capsys, patch_datetime, input_data, config, state, fi
         monkeypatch.setattr(argparse, 'ArgumentParser', argument_parser)
 
         main()
-
-    class argument_parser:
-
-        def __init__(self):
-            self.config = str(Path('tests', 'resources', 'config_local_false.json'))
-
-        def add_argument(self, x, y, help='Dummy config file', required=False):
-            pass
-
-        def parse_args(self):
-            return self
-
-    monkeypatch.setattr(argparse, 'ArgumentParser', argument_parser)
-
-    monkeypatch.setattr(s3, 'create_client', lambda config: None)
-
-    monkeypatch.setattr(
-        s3, 'upload_file', lambda filename, s3_client, bucket, s3_key,
-        encryption_type=None, encryption_key=None: None)
-
-    main()
-    captured = capsys.readouterr()
-    assert captured.out == json.dumps(state) + '\n'
