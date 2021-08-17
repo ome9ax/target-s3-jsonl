@@ -1,7 +1,7 @@
 # Change Log
 
-## [v0.0.5.2](https://github.com/ome9ax/target-s3-jsonl/tree/v0.0.5.2) (2021-08-13)
-[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/tree/v0.0.5.1...v0.0.5.2)
+## [0.0.5.2](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.5.2) (2021-08-13)
+[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.5.1...0.0.5.2)
 
 ### New features:
 - replace `io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')` with `sys.stdin` as it's already natively defined as `<_io.TextIOWrapper name='<stdin>' mode='r' encoding='utf-8'>`
@@ -9,8 +9,8 @@
 ### Merged pull requests:
 - [[readlines] replace `io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')` with `sys.stdin`](https://github.com/ome9ax/target-s3-jsonl/pull/13)
 
-## [v0.0.5.1](https://github.com/ome9ax/target-s3-jsonl/tree/v0.0.5.1) (2021-08-12)
-[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/tree/v0.0.5...v0.0.5.1)
+## [0.0.5.1](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.5.1) (2021-08-12)
+[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.5...0.0.5.1)
 
 ### Fixed bugs:
 - Issue to decompress archived files
@@ -21,8 +21,8 @@
 ### Merged pull requests:
 - [[compression] fix compression management](https://github.com/ome9ax/target-s3-jsonl/pull/12)
 
-## [v0.0.5](https://github.com/ome9ax/target-s3-jsonl/tree/v0.0.5) (2021-08-12)
-[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/tree/v0.0.4...v0.0.5)
+## [0.0.5](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.5) (2021-08-12)
+[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.4...0.0.5)
 
 ### New features:
 - I now store the rows in an Array on memory, and unload the Array into the file by batches. By default the batch size is 64Mb configurable with the `memory_buffer` config option.
@@ -36,8 +36,8 @@
 - [[File load buffer] unload the data from a 64Mb memory buffer](https://github.com/ome9ax/target-s3-jsonl/pull/8)
 - [[Metadata] manage tap Metadata _sdc columns according to the stitch documentation](https://github.com/ome9ax/target-s3-jsonl/pull/9)
 
-## [v0.0.4](https://github.com/ome9ax/target-s3-jsonl/tree/v0.0.4) (2021-08-09)
-[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/tree/v0.0.0...v0.0.4)
+## [0.0.4](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.4) (2021-08-09)
+[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.0...0.0.4)
 
 ### New features:
 - Initial release

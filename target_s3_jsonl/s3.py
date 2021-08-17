@@ -41,9 +41,9 @@ def create_client(config):
         )
     # AWS Profile based authentication
     else:
-        aws_session = boto3.session.Session(profile_name=aws_profile)  # pragma: no cover
+        aws_session = boto3.session.Session(profile_name=aws_profile)  # TODO pragma: no cover
     if aws_endpoint_url:
-        s3 = aws_session.client('s3', endpoint_url=aws_endpoint_url)  # pragma: no cover
+        s3 = aws_session.client('s3', endpoint_url=aws_endpoint_url)
     else:
         s3 = aws_session.client('s3')
     return s3
@@ -59,7 +59,7 @@ def upload_file(filename, s3_client, bucket, s3_key,
         encryption_desc = ""
         encryption_args = None
     else:
-        if encryption_type.lower() == "kms":  # pragma: no cover
+        if encryption_type.lower() == "kms":  # TODO pragma: no cover
             encryption_args = {"ServerSideEncryption": "aws:kms"}
             if encryption_key:
                 encryption_desc = (
@@ -70,7 +70,7 @@ def upload_file(filename, s3_client, bucket, s3_key,
             else:
                 encryption_desc = " using default KMS encryption"
         else:
-            raise NotImplementedError(  # pragma: no cover
+            raise NotImplementedError(
                 "Encryption type '{}' is not supported. "
                 "Expected: 'none' or 'KMS'"
                 .format(encryption_type)
