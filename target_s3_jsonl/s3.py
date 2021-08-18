@@ -41,7 +41,7 @@ def create_client(config):
         )
     # AWS Profile based authentication
     else:
-        aws_session = boto3.session.Session(profile_name=aws_profile)  # TODO pragma: no cover
+        aws_session = boto3.session.Session(profile_name=aws_profile)
 
     if aws_endpoint_url:
         s3 = aws_session.client('s3', endpoint_url=aws_endpoint_url)
@@ -60,23 +60,22 @@ def upload_file(filename, s3_client, bucket, s3_key,
         # No encryption config (defaults to settings on the bucket):
         encryption_desc = ""
         encryption_args = None
-    else:
-        if encryption_type.lower() == "kms":
-            encryption_args = {"ServerSideEncryption": "aws:kms"}
-            if encryption_key:
-                encryption_desc = (
-                    " using KMS encryption key ID '{}'"
-                    .format(encryption_key)
-                )
-                encryption_args["SSEKMSKeyId"] = encryption_key
-            else:
-                encryption_desc = " using default KMS encryption"
-        else:
-            raise NotImplementedError(
-                "Encryption type '{}' is not supported. "
-                "Expected: 'none' or 'KMS'"
-                .format(encryption_type)
+    elif encryption_type.lower() == "kms":
+        encryption_args = {"ServerSideEncryption": "aws:kms"}
+        if encryption_key:
+            encryption_desc = (
+                " using KMS encryption key ID '{}'"
+                .format(encryption_key)
             )
+            encryption_args["SSEKMSKeyId"] = encryption_key
+        else:
+            encryption_desc = " using default KMS encryption"
+    else:
+        raise NotImplementedError(
+            "Encryption type '{}' is not supported. "
+            "Expected: 'none' or 'KMS'"
+            .format(encryption_type)
+        )
     LOGGER.info(
         "Uploading {} to bucket {} at {}{}"
         .format(filename, bucket, s3_key, encryption_desc)

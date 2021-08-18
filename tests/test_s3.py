@@ -28,6 +28,9 @@ def aws_credentials():
     moto_credentials_file_path = Path('tests', 'resources', 'aws_credentials')
     os.environ['AWS_SHARED_CREDENTIALS_FILE'] = str(moto_credentials_file_path)
 
+    os.environ['AWS_ACCESS_KEY_ID'] = 'that_key'
+    os.environ['AWS_SECRET_ACCESS_KEY'] = 'no_big_secret'
+
 
 @mock_s3
 def test_create_client(aws_credentials, config):
@@ -50,6 +53,20 @@ def test_create_client(aws_credentials, config):
         client = create_client(config_copy)
         client.put_object(Bucket=config_copy['s3_bucket'], Key='Eddy is', Body='awesome!')
         body = conn.Object(config_copy['s3_bucket'], 'Eddy is').get()['Body'].read().decode("utf-8")
+
+    # NOTE: AWS Profile based authentication
+    config_copy = deepcopy(config)
+    config_copy['aws_profile'] = 'dummy'
+    config_copy.pop('aws_access_key_id')
+    config_copy.pop('aws_secret_access_key')
+    os.environ.pop('AWS_ACCESS_KEY_ID')
+    os.environ.pop('AWS_SECRET_ACCESS_KEY')
+
+    client = create_client(config_copy)
+    client.put_object(Bucket=config_copy['s3_bucket'], Key='Look!', Body='No access key!')
+    body = conn.Object(config_copy['s3_bucket'], 'Look!').get()['Body'].read().decode("utf-8")
+
+    assert body == 'No access key!'
 
 
 @mock_s3

@@ -351,8 +351,8 @@ def test_persist_lines(caplog, config, input_data, input_multi_stream_data, inva
     dummy_type = '{"type": "DUMMY", "value": {"currently_syncing": "tap_dummy_test-test_table_one"}}'
     output_state, output_file_metadata = persist_lines([dummy_type] + input_multi_stream_data, config)
 
-    assert 'WARNING  root:__init__.py:252 Unknown message type "{}" in message "{}"'.format(
-        json.loads(dummy_type)['type'], dummy_type.replace('"', "'")) + '\n' == caplog.text
+    assert caplog.text == 'WARNING  root:__init__.py:255 Unknown message type "{}" in message "{}"'.format(
+        json.loads(dummy_type)['type'], dummy_type.replace('"', "'")) + '\n'
 
     with raises(NotImplementedError):
         config_copy = deepcopy(config)
@@ -416,6 +416,25 @@ def test_persist_lines(caplog, config, input_data, input_multi_stream_data, inva
         assert [item for item in input_file] == [json.dumps(json.loads(item)['record']) + '\n' for item in input_data[1:3]] * 2
 
     clear_dir(Path(config['temp_dir']))
+
+    # schema = {
+    #     "type": "SCHEMA", "stream": "users", "key_properties": ["id"],
+    #     "schema": {
+    #         "required": ["id"], "type": "object",
+    #         "properties": {"id": {"type": "integer"}}}}
+
+    # record = {"type": "RECORD", "stream": "users", "record": {"id": 1, "name": "X"}}
+
+    # with raises(Exception):
+    #     dummy_input_data = deepcopy(input_data)
+    #     dummy_schema = deepcopy(schema)
+    #     # dummy_schema['schema']['properties']['id']['minimum'] = -2147483648
+    #     # dummy_schema['schema']['properties']['id']['maximum'] = 2147483647
+    #     dummy_schema['schema']['properties']['id']['multipleOf'] = 64.0
+    #     dummy_record = deepcopy(record)
+    #     dummy_record['record']['id'] = 9007199254740996e646
+    #     dummy_input_data.insert(1, json.dumps(dummy_schema))
+    #     output_state, output_file_metadata = persist_lines(dummy_input_data, config)
 
 
 @mock_s3

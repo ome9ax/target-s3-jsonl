@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-__version__ = '0.0.7'
+__version__ = '1.0.0'
 
 import argparse
 import gzip
@@ -58,15 +58,16 @@ def add_metadata_values_to_record(record_message, schema_message, timestamp):
 def remove_metadata_values_from_record(record_message):
     '''Removes every metadata _sdc column from a given record message
     '''
-    keys = {
+    for key in {
         '_sdc_batched_at',
         '_sdc_deleted_at',
         '_sdc_extracted_at',
         '_sdc_primary_key',
         '_sdc_received_at',
         '_sdc_sequence',
-        '_sdc_table_version'}
-    for key in keys:
+        '_sdc_table_version'
+    }:
+
         record_message['record'].pop(key, None)
 
     return record_message['record']
@@ -76,7 +77,7 @@ def emit_state(state):
     if state is not None:
         line = json.dumps(state)
         LOGGER.debug('Emitting state {}'.format(line))
-        sys.stdout.write("{}\n".format(line))
+        sys.stdout.write('{}\n'.format(line))
         sys.stdout.flush()
 
 
@@ -193,7 +194,10 @@ def persist_lines(messages, config):
                 validators[stream].validate(float_to_decimal(record_to_load))
             except Exception as ex:
                 # NOTE: let anything but 'InvalidOperation' raised Exception slip by
-                if type(ex).__name__ == "InvalidOperation":  # TODO pragma: no cover
+                # And actual references of the validator logic can be find
+                # at https://github.com/Julian/jsonschema/blob/main/jsonschema/_validators.py
+                # logic covered in the 'jsonschema' package
+                if type(ex).__name__ == "InvalidOperation":  # pragma: no cover
                     LOGGER.error(
                         "Data validation failed and cannot load to destination. RECORD: {}\n"
                         "'multipleOf' validations that allows long precisions are not supported"
@@ -208,8 +212,7 @@ def persist_lines(messages, config):
 
             file_data[stream]['file_data'].append(json.dumps(record_to_load) + '\n')
 
-            # NOTE: write temporary file
-            #       Use 64Mb default memory buffer
+            # NOTE: write the lines into the temporary file when received data over 64Mb default memory buffer
             if sys.getsizeof(file_data[stream]['file_data']) > config.get('memory_buffer', 64e6):
                 save_file(file_data[stream], open_func)
 
@@ -262,8 +265,8 @@ def main():
     parser.add_argument('-c', '--config', help='Config file', required=True)
     args = parser.parse_args()
 
-    with open(args.config) as input_json:
-        config = json.load(input_json)
+    with open(args.config) as input_file:
+        config = json.load(input_file)
 
     missing_params = {'s3_bucket'} - set(config.keys())
     if missing_params:
