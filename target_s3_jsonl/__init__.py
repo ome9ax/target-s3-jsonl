@@ -65,7 +65,8 @@ def remove_metadata_values_from_record(record_message):
         '_sdc_primary_key',
         '_sdc_received_at',
         '_sdc_sequence',
-        '_sdc_table_version'}:
+        '_sdc_table_version'
+    }:
 
         record_message['record'].pop(key, None)
 
