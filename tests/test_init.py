@@ -171,7 +171,8 @@ def test_add_metadata_columns_to_schema():
     '''TEST : simple add_metadata_columns_to_schema call'''
 
     assert add_metadata_columns_to_schema({
-        "type": "SCHEMA", "stream": "tap_dummy_test-test_table_one",
+        "type": "SCHEMA",
+        "stream": "tap_dummy_test-test_table_one",
         "schema": {
             "properties": {
                 "c_pk": {
@@ -184,7 +185,8 @@ def test_add_metadata_columns_to_schema():
                     "type": ["null", "integer"]}},
             "type": "object"},
         "key_properties": ["c_pk"]}) == {
-            'type': 'SCHEMA', 'stream': 'tap_dummy_test-test_table_one',
+            'type': 'SCHEMA',
+            'stream': 'tap_dummy_test-test_table_one',
             'schema': {
                 'properties': {
                     'c_pk': {
@@ -211,7 +213,8 @@ def test_add_metadata_values_to_record():
     '''TEST : simple add_metadata_values_to_record call'''
 
     assert add_metadata_values_to_record({
-        "type": "RECORD", "stream": "tap_dummy_test-test_table_one",
+        "type": "RECORD",
+        "stream": "tap_dummy_test-test_table_one",
         "record": {
             "c_pk": 1, "c_varchar": "1", "c_int": 1, "c_float": 1.99},
         "version": 1, "time_extracted": "2019-01-31T15:51:47.465408Z"}, {}, 1628713605.321056) == {
@@ -229,7 +232,8 @@ def test_remove_metadata_values_from_record():
     '''TEST : simple remove_metadata_values_from_record call'''
 
     assert remove_metadata_values_from_record({
-        "type": "RECORD", "stream": "tap_dummy_test-test_table_one",
+        "type": "RECORD",
+        "stream": "tap_dummy_test-test_table_one",
         "record": {
             "c_pk": 1, "c_varchar": "1", "c_int": 1, "c_float": 1.99,
             '_sdc_batched_at': '2021-08-11T21:16:22.420939',
@@ -247,7 +251,8 @@ def test_float_to_decimal():
     '''TEST : simple float_to_decimal call'''
 
     assert float_to_decimal({
-        "type": "RECORD", "stream": "tap_dummy_test-test_table_one",
+        "type": "RECORD",
+        "stream": "tap_dummy_test-test_table_one",
         "record": {
             "c_pk": 1, "c_varchar": "1", "c_int": 1, "c_float": 1.99},
         "version": 1, "time_extracted": "2019-01-31T15:51:47.465408Z"}) == {
@@ -288,7 +293,7 @@ def test_save_file(config, file_metadata):
 
 
 @mock_s3
-def test_upload_files(monkeypatch, config, file_metadata):
+def test_upload_files(config, file_metadata):
     '''TEST : simple upload_files call'''
 
     Path(config['temp_dir']).mkdir(parents=True, exist_ok=True)
@@ -417,29 +422,10 @@ def test_persist_lines(caplog, config, input_data, input_multi_stream_data, inva
 
     clear_dir(Path(config['temp_dir']))
 
-    # schema = {
-    #     "type": "SCHEMA", "stream": "users", "key_properties": ["id"],
-    #     "schema": {
-    #         "required": ["id"], "type": "object",
-    #         "properties": {"id": {"type": "integer"}}}}
-
-    # record = {"type": "RECORD", "stream": "users", "record": {"id": 1, "name": "X"}}
-
-    # with raises(Exception):
-    #     dummy_input_data = deepcopy(input_data)
-    #     dummy_schema = deepcopy(schema)
-    #     # dummy_schema['schema']['properties']['id']['minimum'] = -2147483648
-    #     # dummy_schema['schema']['properties']['id']['maximum'] = 2147483647
-    #     dummy_schema['schema']['properties']['id']['multipleOf'] = 64.0
-    #     dummy_record = deepcopy(record)
-    #     dummy_record['record']['id'] = 9007199254740996e646
-    #     dummy_input_data.insert(1, json.dumps(dummy_schema))
-    #     output_state, output_file_metadata = persist_lines(dummy_input_data, config)
-
 
 @mock_s3
 def test_main(monkeypatch, capsys, patch_datetime, patch_argument_parser, input_multi_stream_data, config, state, file_metadata):
-    '''TEST : simple persist_lines call'''
+    '''TEST : simple main call'''
 
     monkeypatch.setattr(sys, 'stdin', input_multi_stream_data)
 
