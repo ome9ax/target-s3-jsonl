@@ -8,7 +8,6 @@ import json
 import os
 from pytest import fixture, raises
 import boto3
-from botocore.errorfactory import ClientError
 from moto import mock_s3
 
 # Package imports
