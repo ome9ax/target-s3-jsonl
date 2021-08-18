@@ -35,7 +35,7 @@ def aws_credentials():
 def test_log_backoff_attempt(caplog):
     '''TEST : simple upload_files call'''
 
-    log_backoff_attempt({'tries': 99}) 
+    log_backoff_attempt({'tries': 99})
 
     assert caplog.text == 'INFO     root:s3.py:22 Error detected communicating with Amazon, triggering backoff: 99 try\n'
 
