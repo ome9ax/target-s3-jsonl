@@ -125,8 +125,8 @@ def upload_files(file_data, config):
     for stream, file_info in file_data.items():
         if file_info['file_name'].exists():
             s3.upload_file(
-                str(file_info['file_name']),
                 s3_client,
+                str(file_info['file_name']),
                 config.get('s3_bucket'),
                 file_info['target_key'],
                 encryption_type=config.get('encryption_type'),

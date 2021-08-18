@@ -11,7 +11,7 @@ import boto3
 from moto import mock_s3
 
 # Package imports
-from target_s3_jsonl.s3 import create_client, upload_file
+from target_s3_jsonl.s3 import create_client, upload_file, log_backoff_attempt
 
 
 @fixture
@@ -30,6 +30,14 @@ def aws_credentials():
 
     os.environ['AWS_ACCESS_KEY_ID'] = 'that_key'
     os.environ['AWS_SECRET_ACCESS_KEY'] = 'no_big_secret'
+
+
+def test_log_backoff_attempt(caplog):
+    '''TEST : simple upload_files call'''
+
+    log_backoff_attempt({'tries': 99})
+
+    assert caplog.text == 'INFO     root:s3.py:22 Error detected communicating with Amazon, triggering backoff: 99 try\n'
 
 
 @mock_s3
@@ -81,8 +89,8 @@ def test_upload_file(config):
     file_path = str(Path('tests', 'resources', 'messages.json'))
     s3_key = 'dummy/messages.json'
     upload_file(
-        file_path,
         client,
+        file_path,
         config.get('s3_bucket'),
         s3_key,
         encryption_type=config.get('encryption_type'),
@@ -96,8 +104,8 @@ def test_upload_file(config):
     # NOTE: 'kms' encryption_type with default encryption_key
     s3_key = 'dummy/messages_kms.json'
     upload_file(
-        file_path,
         client,
+        file_path,
         config.get('s3_bucket'),
         s3_key,
         encryption_type='kms')
@@ -110,8 +118,8 @@ def test_upload_file(config):
     # NOTE: 'kms' encryption_type with encryption_key
     s3_key = 'dummy/messages_kms.json'
     upload_file(
-        file_path,
         client,
+        file_path,
         config.get('s3_bucket'),
         s3_key,
         encryption_type='kms',
@@ -125,8 +133,8 @@ def test_upload_file(config):
     # NOTE: 'dummy' encryption_type
     with raises(Exception):
         upload_file(
-            file_path,
             client,
+            file_path,
             config.get('s3_bucket'),
             'dummy/messages_dummy.json',
             encryption_type='dummy',
