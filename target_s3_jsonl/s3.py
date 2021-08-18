@@ -42,10 +42,12 @@ def create_client(config):
     # AWS Profile based authentication
     else:
         aws_session = boto3.session.Session(profile_name=aws_profile)  # TODO pragma: no cover
+
     if aws_endpoint_url:
-        s3 = aws_session.client('s3', endpoint_url=aws_endpoint_url)  # TODO pragma: no cover
+        s3 = aws_session.client('s3', endpoint_url=aws_endpoint_url)
     else:
         s3 = aws_session.client('s3')
+
     return s3
 
 
@@ -59,7 +61,7 @@ def upload_file(filename, s3_client, bucket, s3_key,
         encryption_desc = ""
         encryption_args = None
     else:
-        if encryption_type.lower() == "kms":  # TODO pragma: no cover
+        if encryption_type.lower() == "kms":
             encryption_args = {"ServerSideEncryption": "aws:kms"}
             if encryption_key:
                 encryption_desc = (

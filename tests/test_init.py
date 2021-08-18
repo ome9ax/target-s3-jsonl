@@ -87,6 +87,14 @@ def config():
 def input_data():
     '''Use custom parameters set'''
 
+    with open(Path('tests', 'resources', 'messages.json'), 'r', encoding='utf-8') as input_file:
+        return [item for item in input_file]
+
+
+@fixture
+def input_multi_stream_data():
+    '''Use custom parameters set'''
+
     with open(Path('tests', 'resources', 'messages-with-three-streams.json'), 'r', encoding='utf-8') as input_file:
         return [item for item in input_file]
 
@@ -297,9 +305,9 @@ def test_upload_files(monkeypatch, config, file_metadata):
     clear_dir(Path(config['temp_dir']))
 
 
-def test_persist_lines(caplog, config, input_data, invalid_row_data, invalid_order_data, state, file_metadata):
+def test_persist_lines(caplog, config, input_data, input_multi_stream_data, invalid_row_data, invalid_order_data, state, file_metadata):
     '''TEST : simple persist_lines call'''
-    output_state, output_file_metadata = persist_lines(input_data, config)
+    output_state, output_file_metadata = persist_lines(input_multi_stream_data, config)
     file_paths = set(path for path in Path(config['temp_dir']).iterdir())
 
     assert output_state == state
@@ -315,7 +323,7 @@ def test_persist_lines(caplog, config, input_data, invalid_row_data, invalid_ord
         clear_dir(Path(config['temp_dir']))
         config_copy = deepcopy(config)
         config_copy['compression'] = compression
-        output_state, output_file_metadata = persist_lines(input_data, config_copy)
+        output_state, output_file_metadata = persist_lines(input_multi_stream_data, config_copy)
         file_paths = set(path for path in Path(config['temp_dir']).iterdir())
 
         assert len(file_paths) == 3
@@ -326,7 +334,7 @@ def test_persist_lines(caplog, config, input_data, invalid_row_data, invalid_ord
 
     config_copy = deepcopy(config)
     config_copy['add_metadata_columns'] = True
-    output_state, output_file_metadata = persist_lines(input_data, config_copy)
+    output_state, output_file_metadata = persist_lines(input_multi_stream_data, config_copy)
 
     assert output_state == state
 
@@ -334,22 +342,22 @@ def test_persist_lines(caplog, config, input_data, invalid_row_data, invalid_ord
 
     config_copy = deepcopy(config)
     config_copy['memory_buffer'] = 9
-    output_state, output_file_metadata = persist_lines(input_data, config_copy)
+    output_state, output_file_metadata = persist_lines(input_multi_stream_data, config_copy)
 
     assert output_state == state
 
     clear_dir(Path(config['temp_dir']))
 
     dummy_type = '{"type": "DUMMY", "value": {"currently_syncing": "tap_dummy_test-test_table_one"}}'
-    output_state, output_file_metadata = persist_lines([dummy_type] + input_data, config)
+    output_state, output_file_metadata = persist_lines([dummy_type] + input_multi_stream_data, config)
 
-    assert 'WARNING  root:__init__.py:251 Unknown message type "{}" in message "{}"'.format(
+    assert 'WARNING  root:__init__.py:252 Unknown message type "{}" in message "{}"'.format(
         json.loads(dummy_type)['type'], dummy_type.replace('"', "'")) + '\n' == caplog.text
 
     with raises(NotImplementedError):
         config_copy = deepcopy(config)
         config_copy['compression'] = 'dummy'
-        output_state, output_file_metadata = persist_lines(input_data, config_copy)
+        output_state, output_file_metadata = persist_lines(input_multi_stream_data, config_copy)
 
     with raises(json.decoder.JSONDecodeError):
         output_state, output_file_metadata = persist_lines(invalid_row_data, config)
@@ -365,11 +373,11 @@ def test_persist_lines(caplog, config, input_data, invalid_row_data, invalid_ord
         "time_extracted": "2019-01-31T15:51:47.465408Z"}
 
     with raises(Exception):
-        dummy_input_data = deepcopy(input_data)
+        dummy_input_multi_stream_data = deepcopy(input_multi_stream_data)
         dummy_record = deepcopy(record)
         dummy_record.pop('stream')
-        dummy_input_data.insert(3, json.dumps(dummy_record))
-        output_state, output_file_metadata = persist_lines(dummy_input_data, config)
+        dummy_input_multi_stream_data.insert(3, json.dumps(dummy_record))
+        output_state, output_file_metadata = persist_lines(dummy_input_multi_stream_data, config)
 
     schema = {
         "type": "SCHEMA",
@@ -383,25 +391,38 @@ def test_persist_lines(caplog, config, input_data, invalid_row_data, invalid_ord
         "key_properties": ["c_pk"]}
 
     with raises(Exception):
-        dummy_input_data = deepcopy(input_data)
+        dummy_input_multi_stream_data = deepcopy(input_multi_stream_data)
         dummy_schema = deepcopy(schema)
         dummy_schema.pop('stream')
-        dummy_input_data.insert(1, json.dumps(dummy_schema))
-        output_state, output_file_metadata = persist_lines(dummy_input_data, config)
+        dummy_input_multi_stream_data.insert(1, json.dumps(dummy_schema))
+        output_state, output_file_metadata = persist_lines(dummy_input_multi_stream_data, config)
 
     with raises(Exception):
-        dummy_input_data = deepcopy(input_data)
+        dummy_input_multi_stream_data = deepcopy(input_multi_stream_data)
         dummy_schema = deepcopy(schema)
         dummy_schema.pop('key_properties')
-        dummy_input_data.insert(1, json.dumps(dummy_schema))
-        output_state, output_file_metadata = persist_lines(dummy_input_data, config)
+        dummy_input_multi_stream_data.insert(1, json.dumps(dummy_schema))
+        output_state, output_file_metadata = persist_lines(dummy_input_multi_stream_data, config)
+
+    # NOTE: 2 distant waves of the same stream
+    dummy_input_data = deepcopy(input_data)
+    for item in input_data[-4:-7:-1]:
+        dummy_input_data.insert(5, item)
+    output_state, output_file_metadata = persist_lines(dummy_input_data, config)
+
+    assert output_state == json.loads(input_data[-1])['value']
+
+    with open(output_file_metadata['users']['file_name'], 'r', encoding='utf-8') as input_file:
+        assert [item for item in input_file] == [json.dumps(json.loads(item)['record']) + '\n' for item in input_data[1:3]] * 2
+
+    clear_dir(Path(config['temp_dir']))
 
 
 @mock_s3
-def test_main(monkeypatch, capsys, patch_datetime, patch_argument_parser, input_data, config, state, file_metadata):
+def test_main(monkeypatch, capsys, patch_datetime, patch_argument_parser, input_multi_stream_data, config, state, file_metadata):
     '''TEST : simple persist_lines call'''
 
-    monkeypatch.setattr(sys, 'stdin', input_data)
+    monkeypatch.setattr(sys, 'stdin', input_multi_stream_data)
 
     conn = boto3.resource('s3', region_name='us-east-1')
     conn.create_bucket(Bucket=config['s3_bucket'])
