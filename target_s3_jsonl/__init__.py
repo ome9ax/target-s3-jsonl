@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-__version__ = '0.0.6'
+__version__ = '0.0.7'
 
 import argparse
 import gzip
@@ -234,16 +234,17 @@ def persist_lines(messages, config):
             key_properties[stream] = o['key_properties']
             LOGGER.debug('Setting schema for {}'.format(stream))
 
-            # NOTE: get the s3 file key
-            file_data[stream] = {
-                'target_key': get_target_key(
-                    o,
-                    naming_convention=naming_convention,
-                    timestamp=now_formatted,
-                    prefix=config.get('s3_key_prefix', ''),
-                    timezone=timezone),
-                'file_name': temp_dir / naming_convention_default.format(stream=stream, timestamp=now_formatted),
-                'file_data': []}
+            # NOTE: get the s3 file key. Persistent array data storage.
+            if stream not in file_data:
+                file_data[stream] = {
+                    'target_key': get_target_key(
+                        o,
+                        naming_convention=naming_convention,
+                        timestamp=now_formatted,
+                        prefix=config.get('s3_key_prefix', ''),
+                        timezone=timezone),
+                    'file_name': temp_dir / naming_convention_default.format(stream=stream, timestamp=now_formatted),
+                    'file_data': []}
 
         elif message_type == 'ACTIVATE_VERSION':
             LOGGER.debug('ACTIVATE_VERSION {}'.format(message))
