@@ -1,7 +1,25 @@
 # Change Log
 
+## [1.0.0](https://github.com/ome9ax/target-s3-jsonl/tree/1.0.0) (2021-08-18)
+[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/compare/0.0.7...1.0.0)
+
+### Closed issues:
+- release version 1.0.0 bump 🥳🥂🍾 tests & spec, `100%` complete coverage
+
+### Merged pull requests:
+- [[coverage] release version 1.0.0 bump 🥳🥂🍾 tests & spec, `100%` complete coverage](https://github.com/ome9ax/target-s3-jsonl/pull/17)
+
+## [0.0.7](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.7) (2021-08-18)
+[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/compare/0.0.6...0.0.7)
+
+### Closed issues:
+- Much more specs and tests, coverage increased to `98.09%`
+
+### Merged pull requests:
+- [[coverage] tests & spec, 98.09% further coverage](https://github.com/ome9ax/target-s3-jsonl/pull/16)
+
 ## [0.0.6](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.6) (2021-08-17)
-[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.5.2...0.0.6)
+[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/compare/0.0.5.2...0.0.6)
 
 ### Closed issues:
 - Much more specs and tests, coverage increased to `96.91%`
@@ -10,7 +28,7 @@
 - [[coverage] bump version 0.0.6 changelog update: Much more specs and tests, coverage increased to `96.91%`](https://github.com/ome9ax/target-s3-jsonl/pull/15)
 
 ## [0.0.5.2](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.5.2) (2021-08-13)
-[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.5.1...0.0.5.2)
+[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/compare/0.0.5.1...0.0.5.2)
 
 ### New features:
 - replace `io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')` with `sys.stdin` as it's already natively defined as `<_io.TextIOWrapper name='<stdin>' mode='r' encoding='utf-8'>`
@@ -19,7 +37,7 @@
 - [[readlines] replace `io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')` with `sys.stdin`](https://github.com/ome9ax/target-s3-jsonl/pull/13)
 
 ## [0.0.5.1](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.5.1) (2021-08-12)
-[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.5...0.0.5.1)
+[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/compare/0.0.5...0.0.5.1)
 
 ### Fixed bugs:
 - Issue to decompress archived files
@@ -31,7 +49,7 @@
 - [[compression] fix compression management](https://github.com/ome9ax/target-s3-jsonl/pull/12)
 
 ## [0.0.5](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.5) (2021-08-12)
-[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.4...0.0.5)
+[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/compare/0.0.4...0.0.5)
 
 ### New features:
 - I now store the rows in an Array on memory, and unload the Array into the file by batches. By default the batch size is 64Mb configurable with the `memory_buffer` config option.
@@ -46,7 +64,7 @@
 - [[Metadata] manage tap Metadata _sdc columns according to the stitch documentation](https://github.com/ome9ax/target-s3-jsonl/pull/9)
 
 ## [0.0.4](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.4) (2021-08-09)
-[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/tree/0.0.0...0.0.4)
+[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/compare/0.0.0...0.0.4)
 
 ### New features:
 - Initial release
