@@ -102,7 +102,7 @@ def get_target_key(message, naming_convention=None, timestamp=None, prefix=None,
     key = naming_convention.format(
         stream=message['stream'],
         timestamp=timestamp if timestamp is not None else datetime.datetime.now(timezone).strftime('%Y%m%dT%H%M%S'),
-        date=datetime.datetime.now(timezone).strftime('%Y%m%d'),
+        date=datetime.datetime.now(timezone).strftime('%Y-%m-%d'),
         time=datetime.datetime.now(timezone).strftime('%H%M%S'))
 
     # NOTE: Replace dynamic tokens
