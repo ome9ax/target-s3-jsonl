@@ -13,6 +13,7 @@ import datetime
 
 from jsonschema import Draft4Validator, FormatChecker
 from decimal import Decimal
+from adjust_precision_for_schema import adjust_decimal_precision_for_schema
 
 from target_s3_jsonl import s3
 from target_s3_jsonl.logger import get_logger
@@ -224,6 +225,7 @@ def persist_lines(messages, config):
             if 'stream' not in o:
                 raise Exception("Line is missing required key 'stream': {}".format(message))
             stream = o['stream']
+            adjust_decimal_precision_for_schema(o['schema'])
 
             if config.get('add_metadata_columns'):
                 schemas[stream] = add_metadata_columns_to_schema(o)
