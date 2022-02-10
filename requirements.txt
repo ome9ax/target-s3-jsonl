@@ -3,4 +3,4 @@ boto3==1.18.22
 backoff==1.11.1
 pytest-cov
 moto[s3]
-adjust-precision-for-schema==0.3.3
+adjust-precision-for-schema==0.3.4
