@@ -1,0 +1,16 @@
+
+version: 2
+updates:
+  # Maintain dependencies for pip
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/London
+    reviewers:
+      - ome9ax
+    open-pull-requests-limit: 9
+    labels:
+      - pip
+      - dependencies
