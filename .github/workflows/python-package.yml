@@ -46,7 +46,7 @@ jobs:
     #   uses: actions/cache@v3
     #   if: startsWith(runner.os, 'Linux')
     #   with:
-    #     path: ~/.cache/pip
+    #     path: ${{ steps.pip-cache.outputs.dir || '~/.cache/pip' }}
     #     key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
     #     restore-keys: |
     #       ${{ runner.os }}-pip-
@@ -55,7 +55,7 @@ jobs:
     #   uses: actions/cache@v3
     #   if: startsWith(runner.os, 'macOS')
     #   with:
-    #     path: ~/Library/Caches/pip
+    #     path: ${{ steps.pip-cache.outputs.dir || '~/Library/Caches/pip' }}
     #     key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
     #     restore-keys: |
     #       ${{ runner.os }}-pip-
@@ -64,7 +64,7 @@ jobs:
     #   uses: actions/cache@v3
     #   if: startsWith(runner.os, 'Windows')
     #   with:
-    #     path: ~\AppData\Local\pip\Cache
+    #     path: ${{ steps.pip-cache.outputs.dir || '~\AppData\Local\pip\Cache' }}
     #     key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
     #     restore-keys: |
     #       ${{ runner.os }}-pip-
@@ -77,8 +77,8 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python -m venv venv || virtualenv venv
-        . venv/bin/activate
+        # python -m venv venv || virtualenv venv
+        # . venv/bin/activate
         pip install --upgrade pip # setuptools
         pip install .[test,lint,dist]
 
@@ -113,7 +113,7 @@ jobs:
 
     - name: Lint with flake8
       run: |
-        . venv/bin/activate
+        # . venv/bin/activate
         # stop the build if there are Python syntax errors or undefined names
         # exit-zero treats all errors as warnings. The GitHub editor is 255 chars wide
         flake8 --show-source --statistics --count
@@ -141,10 +141,10 @@ jobs:
 
     - name: Test
       run: |
-        . venv/bin/activate
+        # . venv/bin/activate
         pytest
     - name: Upload coverage test results to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v2
       if: |
         ${{ matrix.python-version }} == '3.9' \
         && ${{ matrix.os-version }} == 'ubuntu-latest'
@@ -173,7 +173,7 @@ jobs:
 
     - name: Build distribution package
       run: |
-        . venv/bin/activate
+        # . venv/bin/activate
         python setup.py sdist bdist_wheel
         ls -l dist
 
