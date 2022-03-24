@@ -33,35 +33,46 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    # - name: Checkout
+    #   uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+        cache: 'pip'
 
-    - name: Cache pip Linux
-      uses: actions/cache@v2
-      if: startsWith(runner.os, 'Linux')
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-    - name: Cache pip macOS
-      uses: actions/cache@v2
-      if: startsWith(runner.os, 'macOS')
-      with:
-        path: ~/Library/Caches/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-    - name: Cache pip Windows
-      uses: actions/cache@v2
-      if: startsWith(runner.os, 'Windows')
-      with:
-        path: ~\AppData\Local\pip\Cache
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+    # - name: Cache pip Linux
+    #   uses: actions/cache@v2
+    #   if: startsWith(runner.os, 'Linux')
+    #   with:
+    #     path: ~/.cache/pip
+    #     key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
+    #     restore-keys: |
+    #       ${{ runner.os }}-pip-
+    #       ${{ runner.os }}-
+    # - name: Cache pip macOS
+    #   uses: actions/cache@v2
+    #   if: startsWith(runner.os, 'macOS')
+    #   with:
+    #     path: ~/Library/Caches/pip
+    #     key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
+    #     restore-keys: |
+    #       ${{ runner.os }}-pip-
+    #       ${{ runner.os }}-
+    # - name: Cache pip Windows
+    #   uses: actions/cache@v2
+    #   if: startsWith(runner.os, 'Windows')
+    #   with:
+    #     path: ~\AppData\Local\pip\Cache
+    #     key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
+    #     restore-keys: |
+    #       ${{ runner.os }}-pip-
+    #       ${{ runner.os }}-
+
+    # - name: Run with setup-python 3.9
+    #   uses: ./
+    #   with:
+    #     python-version: 3.9
 
     - name: Install dependencies
       run: |
@@ -70,10 +81,10 @@ jobs:
         pip install --upgrade pip # setuptools
         pip install .[test,lint,dist]
 
-    - name: Get pip cache dir
-      id: pip-cache
-      run: |
-        echo "::set-output name=dir::$(pip cache dir)"
+    # - name: Get pip cache dir
+    #   id: pip-cache
+    #   run: |
+    #     echo "::set-output name=dir::$(pip cache dir)"
     - name: pip cache
       uses: actions/cache@v2
       with:
@@ -81,6 +92,23 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
         restore-keys: |
           ${{ runner.os }}-pip-
+          ${{ runner.os }}-
+
+  lint:
+    if: ${{ always() }}
+    needs: build
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: pip cache
+      uses: actions/cache@v2
+      with:
+        path: ${{ steps.pip-cache.outputs.dir }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          ${{ runner.os }}-
 
     - name: Lint with flake8
       run: |
@@ -88,6 +116,27 @@ jobs:
         # stop the build if there are Python syntax errors or undefined names
         # exit-zero treats all errors as warnings. The GitHub editor is 255 chars wide
         flake8 --show-source --statistics --count
+
+  test:
+    needs: build
+    name: Test pip (Python ${{ matrix.python-version}}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        project: ['target-s3-jsonl']
+        os: [ubuntu-latest]
+        python-version: [3.8, 3.9, '3.10']
+
+    steps:
+    - name: pip cache
+      uses: actions/cache@v2
+      with:
+        path: ${{ steps.pip-cache.outputs.dir }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          ${{ runner.os }}-
+
     - name: Test
       run: |
         . venv/bin/activate
@@ -106,11 +155,40 @@ jobs:
         fail_ci_if_error: true # optional (default = false)
         verbose: false # optional (default = false)
 
+  package:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: pip cache
+      uses: actions/cache@v2
+      with:
+        path: ${{ steps.pip-cache.outputs.dir }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          ${{ runner.os }}-
+
     - name: Build distribution package
       run: |
         . venv/bin/activate
         python setup.py sdist bdist_wheel
         ls -l dist
+
+  publish-test:
+    needs: [package, lint]
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: pip cache
+      uses: actions/cache@v2
+      with:
+        path: ${{ steps.pip-cache.outputs.dir }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          ${{ runner.os }}-
+
     - name: Publish distribution package to TestPyPI
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@master
@@ -121,6 +199,20 @@ jobs:
         password: ${{ secrets.TEST_PYPI_API_TOKEN }}
         repository_url: https://test.pypi.org/legacy/
 
+  publish:
+    needs: publish-test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: pip cache
+      uses: actions/cache@v2
+      with:
+        path: ${{ steps.pip-cache.outputs.dir }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          ${{ runner.os }}-
+
     - name: Publish distribution package
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@master
@@ -129,7 +221,3 @@ jobs:
         skip_existing: true
         user: __token__
         password: ${{ secrets.PYPI_API_TOKEN }}
-    - name: Uninstall Dependencies
-      run: |
-        . venv/bin/activate
-        if [ -f requirements.txt ]; then pip uninstall -y -r requirements.txt; fi
