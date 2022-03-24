@@ -112,15 +112,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Get pip cache dir
-      id: pip-cache
-      run: |
-        echo "::set-output name=dir::$(pip cache dir)"
-
     - name: pip cache
       uses: actions/cache@v3
       with:
-        path: ${{ steps.pip-cache.outputs.dir }}
+        path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
         restore-keys: |
           ${{ runner.os }}-pip-
@@ -143,24 +138,19 @@ jobs:
         os: [ubuntu-latest]
         # python-version: [3.8, 3.9, '3.10']
         python-version: [3.9]
-        # include:
-        # - os: ubuntu-latest
-        #   path: ~/.cache/pip
-        # - os: macos-latest
-        #   path: ~/Library/Caches/pip
-        # - os: windows-latest
-        #   path: ~\AppData\Local\pip\Cache
+        include:
+        - os: ubuntu-latest
+          path: ~/.cache/pip
+        - os: macos-latest
+          path: ~/Library/Caches/pip
+        - os: windows-latest
+          path: ~\AppData\Local\pip\Cache
 
     steps:
-    - name: Get pip cache dir
-      id: pip-cache
-      run: |
-        echo "::set-output name=dir::$(pip cache dir)"
-
     - name: pip cache
       uses: actions/cache@v3
       with:
-        path: ${{ steps.pip-cache.outputs.dir }}
+        path: ${{ matrix.path }}
         key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
         restore-keys: |
           ${{ runner.os }}-pip-
@@ -189,15 +179,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Get pip cache dir
-      id: pip-cache
-      run: |
-        echo "::set-output name=dir::$(pip cache dir)"
-
     - name: pip cache
       uses: actions/cache@v3
       with:
-        path: ${{ steps.pip-cache.outputs.dir }}
+        path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
         restore-keys: |
           ${{ runner.os }}-pip-
@@ -214,15 +199,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Get pip cache dir
-      id: pip-cache
-      run: |
-        echo "::set-output name=dir::$(pip cache dir)"
-
     - name: pip cache
       uses: actions/cache@v3
       with:
-        path: ${{ steps.pip-cache.outputs.dir }}
+        path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
         restore-keys: |
           ${{ runner.os }}-pip-
@@ -243,15 +223,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Get pip cache dir
-      id: pip-cache
-      run: |
-        echo "::set-output name=dir::$(pip cache dir)"
-
     - name: pip cache
       uses: actions/cache@v3
       with:
-        path: ${{ steps.pip-cache.outputs.dir }}
+        path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
         restore-keys: |
           ${{ runner.os }}-pip-
