@@ -1,5 +1,19 @@
 # Change Log
 
+## [1.0.1](https://github.com/ome9ax/target-s3-jsonl/tree/1.0.1) (2022-04-06)
+[Full Changelog](https://github.com/ome9ax/target-s3-jsonl/compare/1.0.0...1.0.1)
+
+### Closed issues:
+- introduce 3.10
+- Bump jsonschema from 3.2.0 to 4.4.0
+- Bump boto3 from 1.18.22 to 1.21.33
+
+### Merged pull requests:
+- [[Python] introduce 3.10](https://github.com/ome9ax/target-s3-jsonl/pull/24)
+- [Bump boto3 from 1.21.24 to 1.21.33](https://github.com/ome9ax/target-s3-jsonl/pull/29)
+- [Bump jsonschema from 3.2.0 to 4.4.0](https://github.com/ome9ax/target-s3-jsonl/pull/23)
+- [Bump boto3 from 1.18.22 to 1.21.24](https://github.com/ome9ax/target-s3-jsonl/pull/22)
+
 ## [1.0.0](https://github.com/ome9ax/target-s3-jsonl/tree/1.0.0) (2021-08-18)
 [Full Changelog](https://github.com/ome9ax/target-s3-jsonl/compare/0.0.7...1.0.0)
 
