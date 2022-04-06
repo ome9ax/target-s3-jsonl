@@ -356,7 +356,7 @@ def test_persist_lines(caplog, config, input_data, input_multi_stream_data, inva
     dummy_type = '{"type": "DUMMY", "value": {"currently_syncing": "tap_dummy_test-test_table_one"}}'
     output_state, output_file_metadata = persist_lines([dummy_type] + input_multi_stream_data, config)
 
-    assert caplog.text == 'WARNING  root:__init__.py:255 Unknown message type "{}" in message "{}"'.format(
+    assert caplog.text == 'WARNING  root:__init__.py:260 Unknown message type "{}" in message "{}"'.format(
         json.loads(dummy_type)['type'], dummy_type.replace('"', "'")) + '\n'
 
     with raises(NotImplementedError):

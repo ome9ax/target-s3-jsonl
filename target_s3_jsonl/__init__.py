@@ -13,12 +13,13 @@ import datetime
 
 from jsonschema import Draft4Validator, FormatChecker
 from decimal import Decimal
+from adjust_precision_for_schema import adjust_decimal_precision_for_schema
 
 from target_s3_jsonl import s3
 from target_s3_jsonl.logger import get_logger
 
 LOGGER = get_logger()
-
+DATE_FORMAT_DEFAULT = "%Y%m%d"
 
 def add_metadata_columns_to_schema(schema_message):
     '''Metadata _sdc columns according to the stitch documentation at
@@ -93,7 +94,7 @@ def float_to_decimal(value):
     return value
 
 
-def get_target_key(message, naming_convention=None, timestamp=None, prefix=None, timezone=None):
+def get_target_key(message, naming_convention=None, timestamp=None, prefix=None, timezone=None, date_format=DATE_FORMAT_DEFAULT):
     '''Creates and returns an S3 key for the message'''
     if not naming_convention:
         naming_convention = '{stream}-{timestamp}.json'
@@ -102,7 +103,7 @@ def get_target_key(message, naming_convention=None, timestamp=None, prefix=None,
     key = naming_convention.format(
         stream=message['stream'],
         timestamp=timestamp if timestamp is not None else datetime.datetime.now(timezone).strftime('%Y%m%dT%H%M%S'),
-        date=datetime.datetime.now(timezone).strftime('%Y%m%d'),
+        date=datetime.datetime.now(timezone).strftime(date_format),
         time=datetime.datetime.now(timezone).strftime('%H%M%S'))
 
     # NOTE: Replace dynamic tokens
@@ -142,6 +143,8 @@ def persist_lines(messages, config):
     schemas = {}
     key_properties = {}
     validators = {}
+
+    date_format = config.get('date_format') or DATE_FORMAT_DEFAULT
 
     naming_convention_default = '{stream}-{timestamp}.json'
     naming_convention = config.get('naming_convention') or naming_convention_default
@@ -224,6 +227,7 @@ def persist_lines(messages, config):
             if 'stream' not in o:
                 raise Exception("Line is missing required key 'stream': {}".format(message))
             stream = o['stream']
+            adjust_decimal_precision_for_schema(o['schema'])
 
             if config.get('add_metadata_columns'):
                 schemas[stream] = add_metadata_columns_to_schema(o)
@@ -245,7 +249,8 @@ def persist_lines(messages, config):
                         naming_convention=naming_convention,
                         timestamp=now_formatted,
                         prefix=config.get('s3_key_prefix', ''),
-                        timezone=timezone),
+                        timezone=timezone,
+                        date_format=date_format),
                     'file_name': temp_dir / naming_convention_default.format(stream=stream, timestamp=now_formatted),
                     'file_data': []}
 

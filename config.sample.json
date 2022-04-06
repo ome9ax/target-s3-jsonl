@@ -4,5 +4,6 @@
     "s3_bucket": "BUCKET",
     "s3_key_prefix": "SOME-PREFIX/",
     "compression": "gzip",
-    "naming_convention": "{stream}-{timestamp}.jsonl"
+    "naming_convention": "{stream}-{timestamp}.jsonl",
+    "date_format": "%Y-%m-%d"
 }
