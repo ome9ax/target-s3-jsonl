@@ -278,10 +278,10 @@ def test_get_target_key(config):
     '''TEST : simple get_target_key call'''
 
     timestamp = dt.strptime('20220407_062544', '%Y%m%d_%H%M%S')
-    assert get_target_key('dummy_stream', config, timestamp=timestamp) == 'dummy_stream-20220407T062544.jsonl'
+    assert get_target_key('dummy_stream', config, timestamp=timestamp, prefix='xxx_') == 'xxx_dummy_stream-20220407T062544.jsonl'
 
-    config.update(naming_convention='xxx-{date:%Y%m%d}-{stream:_>8}_{timestamp:%Y%m%d_%H%M%S}.jsonl')
-    assert get_target_key('my', config, timestamp=timestamp) == 'xxx-20220407-______my_20220407_062544.jsonl'
+    config.update(naming_convention='{date:%Y-%m-%d}{stream:_>8}_{timestamp:%Y%m%d_%H%M%S}.jsonl')
+    assert get_target_key('my', config, timestamp=timestamp) == '2022-04-07______my_20220407_062544.jsonl'
 
 
 def test_save_file(config, file_metadata):
@@ -371,9 +371,6 @@ def test_persist_lines(caplog, config, input_data, input_multi_stream_data, inva
     dummy_type = '{"type": "DUMMY", "value": {"currently_syncing": "tap_dummy_test-test_table_one"}}'
     output_state, output_file_metadata = persist_lines([dummy_type] + input_multi_stream_data, config)
 
-    assert caplog.text == 'WARNING  root:__init__.py:229 Unknown message type "{}" in message "{}"'.format(
-        json.loads(dummy_type)['type'], dummy_type.replace('"', "'")) + '\n'
-
     with raises(json.decoder.JSONDecodeError):
         output_state, output_file_metadata = persist_lines(invalid_row_data, config)
 
@@ -434,9 +431,10 @@ def test_persist_lines(caplog, config, input_data, input_multi_stream_data, inva
 
 
 def test_get_config(config):
-    '''TEST : simple main call'''
+    '''TEST : extract and enrich the configuration'''
 
     assert get_config(str(Path('tests', 'resources', 'config.json'))) == config
+
     assert get_config(str(Path('tests', 'resources', 'config_naked.json'))) == {
         's3_bucket': 'BUCKET',
         'compression': 'none',
