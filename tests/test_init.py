@@ -80,9 +80,6 @@ def patch_argument_parser(monkeypatch):
 def config():
     '''Use custom configuration set'''
 
-#     with open(Path('tests', 'resources', 'config.json'), 'r', encoding='utf-8') as config_file:
-#         return json.load(config_file)
-
     return {
         'add_metadata_columns': False,
         'aws_access_key_id': 'ACCESS-KEY',
