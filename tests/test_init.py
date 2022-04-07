@@ -1,5 +1,6 @@
 '''Tests for the target_s3_jsonl.main module'''
 # Standard library imports
+from sqlite3 import Timestamp
 from copy import deepcopy
 from datetime import datetime as dt, timezone
 
@@ -27,6 +28,7 @@ from target_s3_jsonl import (
     save_file,
     upload_files,
     persist_lines,
+    get_config,
     main,
 )
 
@@ -77,10 +79,25 @@ def patch_argument_parser(monkeypatch):
 
 @fixture
 def config():
-    '''Use custom parameters set'''
+    '''Use custom configuration set'''
 
-    with open(Path('tests', 'resources', 'config.json'), 'r', encoding='utf-8') as config_file:
-        return json.load(config_file)
+#     with open(Path('tests', 'resources', 'config.json'), 'r', encoding='utf-8') as config_file:
+#         return json.load(config_file)
+
+    return {
+        'add_metadata_columns': False,
+        'aws_access_key_id': 'ACCESS-KEY',
+        'aws_secret_access_key': 'SECRET',
+        's3_bucket': 'BUCKET',
+        'temp_dir': 'tests/output',
+        'memory_buffer': 2000000,
+        'compression': 'none',
+        'timezone_offset': 0,
+        'naming_convention': '{stream}-{timestamp:%Y%m%dT%H%M%S}.jsonl',
+        'naming_convention_default': '{stream}-{timestamp:%Y%m%dT%H%M%S}.json',
+        'open_func': open
+    }
+
 
 
 @fixture
@@ -117,7 +134,7 @@ def invalid_order_data():
 
 @fixture
 def state():
-    '''Use custom parameters set'''
+    '''Use expected state'''
 
     return {
         'currently_syncing': None,
@@ -129,7 +146,7 @@ def state():
 
 @fixture
 def file_metadata():
-    '''Use custom parameters set'''
+    '''Use expected metadata'''
 
     return {
         'tap_dummy_test-test_table_one': {
@@ -262,11 +279,14 @@ def test_float_to_decimal():
             "version": 1, "time_extracted": "2019-01-31T15:51:47.465408Z"}
 
 
-def test_get_target_key():
+def test_get_target_key(config):
     '''TEST : simple get_target_key call'''
 
-    assert get_target_key({'stream': 'dummy_stream'}, timestamp='99') == 'dummy_stream-99.json'
-    assert get_target_key({'stream': 'dummy_stream'}, naming_convention='xxx-{stream}-{timestamp}.jsonl', timestamp='99') == 'xxx-dummy_stream-99.jsonl'
+    timestamp=dt.strptime('20220407_062544', '%Y%m%d_%H%M%S')
+    assert get_target_key('dummy_stream', config, timestamp=timestamp) == 'dummy_stream-20220407T062544.jsonl'
+
+    config.update(naming_convention='xxx-{date:%Y%m%d}-{stream:_>8}_{timestamp:%Y%m%d_%H%M%S}.jsonl')
+    assert get_target_key('my', config, timestamp=timestamp) == 'xxx-20220407-______my_20220407_062544.jsonl'
 
 
 def test_save_file(config, file_metadata):
@@ -356,13 +376,8 @@ def test_persist_lines(caplog, config, input_data, input_multi_stream_data, inva
     dummy_type = '{"type": "DUMMY", "value": {"currently_syncing": "tap_dummy_test-test_table_one"}}'
     output_state, output_file_metadata = persist_lines([dummy_type] + input_multi_stream_data, config)
 
-    assert caplog.text == 'WARNING  root:__init__.py:255 Unknown message type "{}" in message "{}"'.format(
+    assert caplog.text == 'WARNING  root:__init__.py:229 Unknown message type "{}" in message "{}"'.format(
         json.loads(dummy_type)['type'], dummy_type.replace('"', "'")) + '\n'
-
-    with raises(NotImplementedError):
-        config_copy = deepcopy(config)
-        config_copy['compression'] = 'dummy'
-        output_state, output_file_metadata = persist_lines(input_multi_stream_data, config_copy)
 
     with raises(json.decoder.JSONDecodeError):
         output_state, output_file_metadata = persist_lines(invalid_row_data, config)
@@ -423,6 +438,47 @@ def test_persist_lines(caplog, config, input_data, input_multi_stream_data, inva
     clear_dir(Path(config['temp_dir']))
 
 
+def test_get_config(config):
+    '''TEST : simple main call'''
+
+    assert get_config(str(Path('tests', 'resources', 'config.json'))) == config
+    assert get_config(str(Path('tests', 'resources', 'config_naked.json'))) == {
+        's3_bucket': 'BUCKET',
+        'compression': 'none',
+        'naming_convention': '{stream}-{timestamp:%Y%m%dT%H%M%S}.json',
+        'memory_buffer': 64e6,
+        'naming_convention_default': '{stream}-{timestamp:%Y%m%dT%H%M%S}.json',
+        'open_func': open
+    }
+
+    with raises(Exception):
+        get_config(str(Path('tests', 'resources', 'config_no_bucket.json')))
+
+    with raises(Exception):
+        get_config(str(Path('tests', 'resources', 'config_unknown_param.json')))
+
+    assert get_config(str(Path('tests', 'resources', 'config_compression_gzip.json'))) == {
+        's3_bucket': 'BUCKET',
+        'compression': 'gzip',
+        'naming_convention': '{stream}-{timestamp:%Y%m%dT%H%M%S}.json.gz',
+        'memory_buffer': 64e6,
+        'naming_convention_default': '{stream}-{timestamp:%Y%m%dT%H%M%S}.json.gz',
+        'open_func': gzip.open
+    }
+
+    assert get_config(str(Path('tests', 'resources', 'config_compression_lzma.json'))) == {
+        's3_bucket': 'BUCKET',
+        'compression': 'lzma',
+        'naming_convention': '{stream}-{timestamp:%Y%m%dT%H%M%S}.json.xz',
+        'memory_buffer': 64e6,
+        'naming_convention_default': '{stream}-{timestamp:%Y%m%dT%H%M%S}.json.xz',
+        'open_func': lzma.open
+    }
+
+    with raises(NotImplementedError):
+        get_config(str(Path('tests', 'resources', 'config_compression_dummy.json')))
+
+
 @mock_s3
 def test_main(monkeypatch, capsys, patch_datetime, patch_argument_parser, input_multi_stream_data, config, state, file_metadata):
     '''TEST : simple main call'''
@@ -462,20 +518,3 @@ def test_main(monkeypatch, capsys, patch_datetime, patch_argument_parser, input_
         assert file_info['file_name'].exists()
 
     clear_dir(Path(config['temp_dir']))
-
-    with raises(Exception):
-
-        class argument_parser:
-
-            def __init__(self):
-                self.config = str(Path('tests', 'resources', 'config_no_bucket.json'))
-
-            def add_argument(self, x, y, help='Dummy config file', required=False):
-                pass
-
-            def parse_args(self):
-                return self
-
-        monkeypatch.setattr(argparse, 'ArgumentParser', argument_parser)
-
-        main()
