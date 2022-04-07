@@ -46,6 +46,12 @@ pip install target-s3-jsonl
 deactivate
 ```
 
+Alternative
+```bash
+python -m venv ~/.virtualenvs/target-s3-jsonl
+~/.virtualenvs/target-s3-jsonl/bin/pip install target-s3-jsonl
+```
+
 ### To run
 
 Like any other target that's following the singer specificiation:
