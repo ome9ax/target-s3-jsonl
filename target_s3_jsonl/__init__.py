@@ -93,7 +93,7 @@ def float_to_decimal(value):
     return value
 
 
-def get_target_key(stream, config, timestamp=None, prefix=None, timezone=None):
+def get_target_key(stream, config, timestamp=None, prefix=None):
     '''Creates and returns an S3 key for the stream'''
 
     # NOTE: Replace dynamic tokens
@@ -166,18 +166,10 @@ def persist_lines(messages, config):
             record_to_load = o['record']
             try:
                 validators[stream].validate(float_to_decimal(record_to_load))
-            except Exception as ex:
-                # NOTE: let anything but 'InvalidOperation' raised Exception slip by
-                # And actual references of the validator logic can be find
-                # at https://github.com/Julian/jsonschema/blob/main/jsonschema/_validators.py
-                # logic covered in the 'jsonschema' package
-                if type(ex).__name__ == "InvalidOperation":  # pragma: no cover
-                    LOGGER.error(
-                        "Data validation failed and cannot load to destination. RECORD: {}\n"
-                        "'multipleOf' validations that allows long precisions are not supported"
-                        " (i.e. with 15 digits or more). Try removing 'multipleOf' methods from JSON schema."
-                        .format(record_to_load))
-                    raise ex
+            except Exception:
+                LOGGER.error(
+                    "Data validation failed and cannot load to destination. RECORD: {}\n"
+                    .format(record_to_load))
 
             if config.get('add_metadata_columns'):
                 record_to_load = add_metadata_values_to_record(o, {}, now.timestamp())
@@ -218,8 +210,7 @@ def persist_lines(messages, config):
                         stream=stream,
                         config=config,
                         timestamp=now,
-                        prefix=config.get('s3_key_prefix', ''),
-                        timezone=timezone),
+                        prefix=config.get('s3_key_prefix', '')),
                     'file_name': temp_dir / config['naming_convention_default'].format(stream=stream, timestamp=now),
                     'file_data': []}
 
