@@ -1,6 +1,5 @@
 '''Tests for the target_s3_jsonl.main module'''
 # Standard library imports
-from sqlite3 import Timestamp
 from copy import deepcopy
 from datetime import datetime as dt, timezone
 
@@ -97,7 +96,6 @@ def config():
         'naming_convention_default': '{stream}-{timestamp:%Y%m%dT%H%M%S}.json',
         'open_func': open
     }
-
 
 
 @fixture
@@ -282,7 +280,7 @@ def test_float_to_decimal():
 def test_get_target_key(config):
     '''TEST : simple get_target_key call'''
 
-    timestamp=dt.strptime('20220407_062544', '%Y%m%d_%H%M%S')
+    timestamp = dt.strptime('20220407_062544', '%Y%m%d_%H%M%S')
     assert get_target_key('dummy_stream', config, timestamp=timestamp) == 'dummy_stream-20220407T062544.jsonl'
 
     config.update(naming_convention='xxx-{date:%Y%m%d}-{stream:_>8}_{timestamp:%Y%m%d_%H%M%S}.jsonl')
