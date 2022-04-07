@@ -93,20 +93,14 @@ def float_to_decimal(value):
     return value
 
 
-def get_target_key(message, naming_convention=None, timestamp=None, prefix=None, timezone=None):
-    '''Creates and returns an S3 key for the message'''
-    if not naming_convention:
-        naming_convention = '{stream}-{timestamp}.json'
-
-    # replace simple tokens
-    key = naming_convention.format(
-        stream=message['stream'],
-        timestamp=timestamp if timestamp is not None else datetime.datetime.now(timezone).strftime('%Y%m%dT%H%M%S'),
-        date=datetime.datetime.now(timezone).strftime('%Y%m%d'),
-        time=datetime.datetime.now(timezone).strftime('%H%M%S'))
+def get_target_key(stream, config, timestamp=None, prefix=None, timezone=None):
+    '''Creates and returns an S3 key for the stream'''
 
     # NOTE: Replace dynamic tokens
-    # TODO: replace dynamic tokens such as {date(<format>)} with the date formatted as requested in <format>
+    key = config.get('naming_convention').format(
+        stream=stream,
+        timestamp=timestamp,
+        date=timestamp)
 
     return str(Path(key).parent / f'{prefix}{Path(key).name}') if prefix else key
 
@@ -143,26 +137,7 @@ def persist_lines(messages, config):
     key_properties = {}
     validators = {}
 
-    naming_convention_default = '{stream}-{timestamp}.json'
-    naming_convention = config.get('naming_convention') or naming_convention_default
-    open_func = open
     timezone = datetime.timezone(datetime.timedelta(hours=config.get('timezone_offset'))) if config.get('timezone_offset') is not None else None
-
-    if f"{config.get('compression')}".lower() == 'gzip':
-        open_func = gzip.open
-        naming_convention_default = f"{naming_convention_default}.gz"
-        naming_convention = f"{naming_convention}.gz"
-
-    elif f"{config.get('compression')}".lower() == 'lzma':
-        open_func = lzma.open
-        naming_convention_default = f"{naming_convention_default}.xz"
-        naming_convention = f"{naming_convention}.xz"
-
-    elif f"{config.get('compression')}".lower() not in {'', 'none'}:
-        raise NotImplementedError(
-            "Compression type '{}' is not supported. "
-            "Expected: 'none', 'gzip', or 'lzma'"
-            .format(f"{config.get('compression')}".lower()))
 
     # NOTE: Use the system specific temp directory if no custom temp_dir provided
     temp_dir = Path(config.get('temp_dir', tempfile.gettempdir())).expanduser()
@@ -172,7 +147,6 @@ def persist_lines(messages, config):
 
     file_data = {}
     now = datetime.datetime.now(timezone)
-    now_formatted = now.strftime('%Y%m%dT%H%M%S')
 
     for message in messages:
         try:
@@ -213,8 +187,8 @@ def persist_lines(messages, config):
             file_data[stream]['file_data'].append(json.dumps(record_to_load) + '\n')
 
             # NOTE: write the lines into the temporary file when received data over 64Mb default memory buffer
-            if sys.getsizeof(file_data[stream]['file_data']) > config.get('memory_buffer', 64e6):
-                save_file(file_data[stream], open_func)
+            if sys.getsizeof(file_data[stream]['file_data']) > config.get('memory_buffer'):
+                save_file(file_data[stream], config.get('open_func'))
 
             state = None
         elif message_type == 'STATE':
@@ -241,12 +215,12 @@ def persist_lines(messages, config):
             if stream not in file_data:
                 file_data[stream] = {
                     'target_key': get_target_key(
-                        o,
-                        naming_convention=naming_convention,
-                        timestamp=now_formatted,
+                        stream=stream,
+                        config=config,
+                        timestamp=now,
                         prefix=config.get('s3_key_prefix', ''),
                         timezone=timezone),
-                    'file_name': temp_dir / naming_convention_default.format(stream=stream, timestamp=now_formatted),
+                    'file_name': temp_dir / config['naming_convention_default'].format(stream=stream, timestamp=now),
                     'file_data': []}
 
         elif message_type == 'ACTIVATE_VERSION':
@@ -255,9 +229,81 @@ def persist_lines(messages, config):
             LOGGER.warning('Unknown message type "{}" in message "{}"'.format(o['type'], o))
 
     for _, file_info in file_data.items():
-        save_file(file_info, open_func)
+        save_file(file_info, config.get('open_func'))
 
     return state, file_data
+
+
+def get_config(config_path):
+    datetime_format = {
+        'timestamp_format': '%Y%m%dT%H%M%S',
+        'date_format': '%Y%m%d'
+    }
+
+    naming_convention_default = '{stream}-{timestamp}.json' \
+        .replace('{timestamp}', '{timestamp:' + datetime_format['timestamp_format'] + '}') \
+        .replace('{date}', '{date:' + datetime_format['date_format'] + '}')
+
+    config = {
+        'compression': 'none',
+        'naming_convention': naming_convention_default,
+        'memory_buffer': 64e6
+    }
+
+    with open(config_path) as input_file:
+        config.update(json.load(input_file))
+
+    missing_params = {'s3_bucket'} - set(config.keys())
+    if missing_params:
+        raise Exception(f'Config is missing required settings: {missing_params}')
+
+    unknown_params = set(config.keys()) - {
+        'add_metadata_columns',
+        'aws_access_key_id',
+        'aws_secret_access_key',
+        'aws_session_token',
+        'aws_endpoint_url',
+        'aws_profile',
+        's3_bucket',
+        's3_key_prefix',
+        'encryption_type',
+        'encryption_key',
+        'compression',
+        'naming_convention',
+        'timezone_offset',
+        'temp_dir',
+        'local',
+        'memory_buffer'
+    }
+
+    if unknown_params:
+        raise Exception(f'Config unknown settings: {unknown_params}')
+
+    config['naming_convention_default'] = naming_convention_default
+    config['naming_convention'] = config['naming_convention'] \
+        .replace('{timestamp}', '{timestamp:' + datetime_format['timestamp_format'] + '}') \
+        .replace('{date}', '{date:' + datetime_format['date_format'] + '}')
+
+    if f"{config.get('compression')}".lower() == 'gzip':
+        config['open_func'] = gzip.open
+        config['naming_convention_default'] = config['naming_convention_default'] + '.gz'
+        config['naming_convention'] = config['naming_convention'] + '.gz'
+
+    elif f"{config.get('compression')}".lower() == 'lzma':
+        config['open_func'] = lzma.open
+        config['naming_convention_default'] = config['naming_convention_default'] + '.xz'
+        config['naming_convention'] = config['naming_convention'] + '.xz'
+
+    elif f"{config.get('compression')}".lower() == 'none':
+        config['open_func'] = open
+
+    else:
+        raise NotImplementedError(
+            "Compression type '{}' is not supported. "
+            "Expected: 'none', 'gzip', or 'lzma'"
+            .format(f"{config.get('compression')}".lower()))
+
+    return config
 
 
 def main():
@@ -265,12 +311,7 @@ def main():
     parser.add_argument('-c', '--config', help='Config file', required=True)
     args = parser.parse_args()
 
-    with open(args.config) as input_file:
-        config = json.load(input_file)
-
-    missing_params = {'s3_bucket'} - set(config.keys())
-    if missing_params:
-        raise Exception('Config is missing required keys: {}'.format(missing_params))
+    config = get_config(args.config)
 
     state, file_data = persist_lines(sys.stdin, config)
 
