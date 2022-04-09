@@ -1,6 +1,5 @@
 '''Tests for the target_s3_jsonl.main module'''
 # Standard library imports
-from builtins import breakpoint
 from datetime import datetime as dt, timezone
 
 # Third party imports
