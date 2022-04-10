@@ -14,7 +14,7 @@ following the [Singer spec](https://github.com/singer-io/getting-started/blob/ma
 
 `target-s3-jsonl` is a [Singer](https://singer.io) Target which intend to work with regular [Singer](https://singer.io) Tap. It take the output of the tap and export it as a [JSON Lines](http://jsonlines.org/) files into an AWS S3 bucket.
 
-This package is built over the [`target-core`](https://github.com/ome9ax/target-core).
+This package is built over the [`target-core`](https://gitlab.com/omegax/target-core).
 
 ## Install
 
