@@ -10,6 +10,7 @@ from pathlib import Path
 import sys
 import tempfile
 import datetime
+from uuid import uuid4
 
 from jsonschema import Draft4Validator, FormatChecker
 from decimal import Decimal
@@ -42,14 +43,14 @@ def add_metadata_values_to_record(record_message, schema_message, timestamp):
     '''Populate metadata _sdc columns from incoming record message
     The location of the required attributes are fixed in the stream
     '''
-    now = datetime.datetime.fromtimestamp(timestamp, tz=datetime.timezone.utc).replace(tzinfo=None).isoformat()
+    utcnow = timestamp.astimezone(datetime.timezone.utc).replace(tzinfo=None).isoformat()
     record_message['record'].update(
-        _sdc_batched_at=now,
+        _sdc_batched_at=utcnow,
         _sdc_deleted_at=record_message.get('record', {}).get('_sdc_deleted_at'),
         _sdc_extracted_at=record_message.get('time_extracted'),
         _sdc_primary_key=schema_message.get('key_properties'),
-        _sdc_received_at=now,
-        _sdc_sequence=int(timestamp * 1e3),
+        _sdc_received_at=utcnow,
+        _sdc_sequence=int(timestamp.timestamp() * 1e3),
         _sdc_table_version=record_message.get('version'))
 
     return record_message['record']
@@ -100,7 +101,8 @@ def get_target_key(stream, config, timestamp=None, prefix=None):
     key = config.get('naming_convention').format(
         stream=stream,
         timestamp=timestamp,
-        date=timestamp)
+        date=timestamp,
+        uuid=uuid4())
 
     return str(Path(key).parent / f'{prefix}{Path(key).name}') if prefix else key
 
@@ -162,17 +164,12 @@ def persist_lines(messages, config):
             if stream not in schemas:
                 raise Exception('A record for stream {} was encountered before a corresponding schema'.format(stream))
 
-            # NOTE: Validate record
             record_to_load = o['record']
-            try:
-                validators[stream].validate(float_to_decimal(record_to_load))
-            except Exception:
-                LOGGER.error(
-                    "Data validation failed and cannot load to destination. RECORD: {}\n"
-                    .format(record_to_load))
+            # NOTE: Validate record
+            validators[stream].validate(float_to_decimal(record_to_load))
 
             if config.get('add_metadata_columns'):
-                record_to_load = add_metadata_values_to_record(o, {}, now.timestamp())
+                record_to_load = add_metadata_values_to_record(o, {}, now)
             else:
                 record_to_load = remove_metadata_values_from_record(o)
 
@@ -196,6 +193,9 @@ def persist_lines(messages, config):
             else:
                 schemas[stream] = float_to_decimal(o['schema'])
 
+            # NOTE: prevent exception *** jsonschema.exceptions.UnknownType: Unknown type 'SCHEMA' for validator.
+            #       'type' is a key word for jsonschema validator which is different from `{'type': 'SCHEMA'}` as the message type.
+            schemas[stream].pop('type')
             validators[stream] = Draft4Validator(schemas[stream], format_checker=FormatChecker())
 
             if 'key_properties' not in o:

@@ -196,7 +196,8 @@ def test_add_metadata_columns_to_schema():
                     "inclusion": "available", "minimum": -2147483648, "maximum": 2147483647,
                     "type": ["null", "integer"]}},
             "type": "object"},
-        "key_properties": ["c_pk"]}) == {
+        "key_properties": ["c_pk"]}) \
+        == {
             'type': 'SCHEMA',
             'stream': 'tap_dummy_test-test_table_one',
             'schema': {
@@ -229,7 +230,8 @@ def test_add_metadata_values_to_record():
         "stream": "tap_dummy_test-test_table_one",
         "record": {
             "c_pk": 1, "c_varchar": "1", "c_int": 1, "c_float": 1.99},
-        "version": 1, "time_extracted": "2019-01-31T15:51:47.465408Z"}, {}, 1628713605.321056) == {
+        "version": 1, "time_extracted": "2019-01-31T15:51:47.465408Z"}, {}, dt.fromtimestamp(1628713605.321056, tz=timezone.utc)) \
+        == {
             'c_pk': 1, 'c_varchar': '1', 'c_int': 1, 'c_float': 1.99,
             '_sdc_batched_at': '2021-08-11T20:26:45.321056',
             '_sdc_deleted_at': None,
@@ -255,7 +257,8 @@ def test_remove_metadata_values_from_record():
             '_sdc_received_at': '2021-08-11T21:16:22.420939',
             '_sdc_sequence': 1628712982421,
             '_sdc_table_version': 1},
-        "version": 1, "time_extracted": "2019-01-31T15:51:47.465408Z"}) == {
+        "version": 1, "time_extracted": "2019-01-31T15:51:47.465408Z"}) \
+        == {
             'c_pk': 1, 'c_varchar': '1', 'c_int': 1, 'c_float': 1.99}
 
 
@@ -267,7 +270,8 @@ def test_float_to_decimal():
         "stream": "tap_dummy_test-test_table_one",
         "record": {
             "c_pk": 1, "c_varchar": "1", "c_int": 1, "c_float": 1.99},
-        "version": 1, "time_extracted": "2019-01-31T15:51:47.465408Z"}) == {
+        "version": 1, "time_extracted": "2019-01-31T15:51:47.465408Z"}) \
+        == {
             "type": "RECORD", "stream": "tap_dummy_test-test_table_one",
             "record": {
                 "c_pk": 1, "c_varchar": "1", "c_int": 1, "c_float": Decimal('1.99')},
