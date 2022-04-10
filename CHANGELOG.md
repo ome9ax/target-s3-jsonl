@@ -1,5 +1,12 @@
 # Change Log
 
+## [1.1.0](https://github.com/ome9ax/target-s3-jsonl/tree/1.1.0) (2022-04-07)
+**Full Changelog**: https://github.com/ome9ax/target-s3-jsonl/compare/1.0.1...1.1.0
+
+## What's Changed
+* [Python] Advanced string formatting by @ome9ax in https://github.com/ome9ax/target-s3-jsonl/pull/31
+* Upgrade version to 1.1.0 by @ome9ax in https://github.com/ome9ax/target-s3-jsonl/pull/32
+
 ## [1.0.1](https://github.com/ome9ax/target-s3-jsonl/tree/1.0.1) (2022-04-06)
 [Full Changelog](https://github.com/ome9ax/target-s3-jsonl/compare/1.0.0...1.0.1)
 
