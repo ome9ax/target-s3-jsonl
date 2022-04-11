@@ -85,21 +85,21 @@ Full list of options in `config.json`:
 
 | Property                            | Type    | Mandatory? | Description                                                   |
 |-------------------------------------|---------|------------|---------------------------------------------------------------|
+| naming_convention                   | String  |            | (Default: None) Custom naming convention of the s3 key. Replaces tokens `date`, `stream`, and `timestamp` with the appropriate values.<br><br>Supports datetime and other python advanced string formatting e.g. `{stream:_>8}_{timestamp:%Y%m%d_%H%M%S}.json` or `{stream}/{timestamp:%Y}/{timestamp:%m}/{timestamp:%d}/{timestamp:%Y%m%d_%H%M%S_%f}.json`.<br><br>Supports "folders" in s3 keys e.g. `folder/folder2/{stream}/export_date={date}/{timestamp}.json`.<br><br>Honors the `s3_key_prefix`,  if set, by prepending the "filename". E.g. naming_convention = `folder1/my_file.json` and s3_key_prefix = `prefix_` results in `folder1/prefix_my_file.json` |
+| timezone_offset                     | Integer |            | Offset value in hour. Use offset `0` hours is you want the `naming_convention` to use `utc` time zone. The `null` values is used by default. |
+| memory_buffer                       | Integer |            | Memory buffer's size used before storing the data into the temporary file. 64Mb used by default if unspecified. |
+| temp_dir                            | String  |            | (Default: platform-dependent) Directory of temporary JSONL files with RECORD messages. |
+| compression                         | String  |            | The type of compression to apply before uploading. Supported options are `none` (default), `gzip`, and `lzma`. For gzipped files, the file extension will automatically be changed to `.json.gz` for all files. For `lzma` compression, the file extension will automatically be changed to `.json.xz` for all files. |
+| local                               | Boolean |            | Keep the file in the `temp_dir` directory without uploading the files on `s3`. |
+| s3_bucket                           | String  | Yes        | S3 Bucket name                                                |
+| s3_key_prefix                       | String  |            | (Default: None) A static prefix before the generated S3 key names. |
+| aws_profile                         | String  |            | AWS profile name for profile based authentication. If not provided, `AWS_PROFILE` environment variable will be used. |
+| aws_endpoint_url                    | String  |            | AWS endpoint URL. |
 | aws_access_key_id                   | String  |            | S3 Access Key Id. If not provided, `AWS_ACCESS_KEY_ID` environment variable will be used. |
 | aws_secret_access_key               | String  |            | S3 Secret Access Key. If not provided, `AWS_SECRET_ACCESS_KEY` environment variable will be used. |
 | aws_session_token                   | String  |            | AWS Session token. If not provided, `AWS_SESSION_TOKEN` environment variable will be used. |
-| aws_endpoint_url                    | String  |            | AWS endpoint URL. |
-| aws_profile                         | String  |            | AWS profile name for profile based authentication. If not provided, `AWS_PROFILE` environment variable will be used. |
-| s3_bucket                           | String  | Yes        | S3 Bucket name                                                |
-| s3_key_prefix                       | String  |            | (Default: None) A static prefix before the generated S3 key names. Using prefixes you can 
 | encryption_type                     | String  |            | (Default: 'none') The type of encryption to use. Current supported options are: 'none' and 'KMS'. |
 | encryption_key                      | String  |            | A reference to the encryption key to use for data encryption. For KMS encryption, this should be the name of the KMS encryption key ID (e.g. '1234abcd-1234-1234-1234-1234abcd1234'). This field is ignored if 'encryption_type' is none or blank. |
-| compression                         | String  |            | The type of compression to apply before uploading. Supported options are `none` (default), `gzip`, and `lzma`. For gzipped files, the file extension will automatically be changed to `.json.gz` for all files. For `lzma` compression, the file extension will automatically be changed to `.json.xz` for all files. |
-| naming_convention                   | String  |            | (Default: None) Custom naming convention of the s3 key. Replaces tokens `date`, `stream`, and `timestamp` with the appropriate values.<br><br>Supports datetime and other python advanced string formatting e.g. `{stream:_>8}_{timestamp:%Y%m%d_%H%M%S}.json` or `{stream}/{timestamp:%Y}/{timestamp:%m}/{timestamp:%d}/{timestamp:%Y%m%d_%H%M%S_%f}.json`.<br><br>Supports "folders" in s3 keys e.g. `folder/folder2/{stream}/export_date={date}/{timestamp}.json`.<br><br>Honors the `s3_key_prefix`,  if set, by prepending the "filename". E.g. naming_convention = `folder1/my_file.json` and s3_key_prefix = `prefix_` results in `folder1/prefix_my_file.json` |
-| timezone_offset                     | Integer |            | Use offset `0` hours is you want the `naming_convention` to use `utc` time zone. The `null` values is used by default. |
-| temp_dir                            | String  |            | (Default: platform-dependent) Directory of temporary JSONL files with RECORD messages. |
-| local                               | Boolean |            | Keep the file in the `temp_dir` directory without uploading the files on `s3`. |
-| memory_buffer                       | Integer |            | Memory buffer's size used before storing the data into the temporary file. 64Mb used by default if unspecified. |
 
 ## Test
 Install the tools

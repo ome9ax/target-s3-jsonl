@@ -24,10 +24,10 @@ from target_s3_jsonl import (
     emit_state,
     float_to_decimal,
     get_target_key,
-    save_file,
+    save_jsonl_file,
     upload_files,
     persist_lines,
-    get_config,
+    config_file,
     main,
 )
 
@@ -289,7 +289,7 @@ def test_get_target_key(config):
 
 
 def test_save_file(config, file_metadata):
-    '''TEST : simple save_file call'''
+    '''TEST : simple save_jsonl_file call'''
     Path(config['temp_dir']).mkdir(parents=True, exist_ok=True)
 
     # NOTE: test compression saved file
@@ -297,7 +297,7 @@ def test_save_file(config, file_metadata):
         file_metadata_copy = deepcopy(file_metadata)
         for _, file_info in file_metadata_copy.items():
             file_info['file_name'] = file_info['file_name'].parent / f"{file_info['file_name'].name}{extension}"
-            save_file(file_info, open_func)
+            save_jsonl_file(file_info, open_func)
 
         assert not file_metadata_copy['tap_dummy_test-test_table_one']['file_name'].exists()
         assert not file_metadata_copy['tap_dummy_test-test_table_two']['file_name'].exists()
@@ -317,7 +317,7 @@ def test_upload_files(config, file_metadata):
 
     Path(config['temp_dir']).mkdir(parents=True, exist_ok=True)
     for _, file_info in file_metadata.items():
-        save_file(file_info, open)
+        save_jsonl_file(file_info, open)
 
     conn = boto3.resource('s3', region_name='us-east-1')
     conn.create_bucket(Bucket=config['s3_bucket'])
@@ -437,9 +437,9 @@ def test_persist_lines(caplog, config, input_data, input_multi_stream_data, inva
 def test_get_config(config):
     '''TEST : extract and enrich the configuration'''
 
-    assert get_config(str(Path('tests', 'resources', 'config.json'))) == config
+    assert config_file(str(Path('tests', 'resources', 'config.json'))) == config
 
-    assert get_config(str(Path('tests', 'resources', 'config_naked.json'))) == {
+    assert config_file(str(Path('tests', 'resources', 'config_naked.json'))) == {
         's3_bucket': 'BUCKET',
         'compression': 'none',
         'naming_convention': '{stream}-{timestamp:%Y%m%dT%H%M%S}.json',
@@ -449,12 +449,12 @@ def test_get_config(config):
     }
 
     with raises(Exception):
-        get_config(str(Path('tests', 'resources', 'config_no_bucket.json')))
+        config_file(str(Path('tests', 'resources', 'config_no_bucket.json')))
 
     with raises(Exception):
-        get_config(str(Path('tests', 'resources', 'config_unknown_param.json')))
+        config_file(str(Path('tests', 'resources', 'config_unknown_param.json')))
 
-    assert get_config(str(Path('tests', 'resources', 'config_compression_gzip.json'))) == {
+    assert config_file(str(Path('tests', 'resources', 'config_compression_gzip.json'))) == {
         's3_bucket': 'BUCKET',
         'compression': 'gzip',
         'naming_convention': '{stream}-{timestamp:%Y%m%dT%H%M%S}.json.gz',
@@ -463,7 +463,7 @@ def test_get_config(config):
         'open_func': gzip.open
     }
 
-    assert get_config(str(Path('tests', 'resources', 'config_compression_lzma.json'))) == {
+    assert config_file(str(Path('tests', 'resources', 'config_compression_lzma.json'))) == {
         's3_bucket': 'BUCKET',
         'compression': 'lzma',
         'naming_convention': '{stream}-{timestamp:%Y%m%dT%H%M%S}.json.xz',
@@ -473,7 +473,7 @@ def test_get_config(config):
     }
 
     with raises(NotImplementedError):
-        get_config(str(Path('tests', 'resources', 'config_compression_dummy.json')))
+        config_file(str(Path('tests', 'resources', 'config_compression_dummy.json')))
 
 
 @mock_s3

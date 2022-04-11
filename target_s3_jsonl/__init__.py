@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-__version__ = '1.1.0'
+__version__ = '1.2.0'
 
 import argparse
 import gzip
@@ -107,7 +107,7 @@ def get_target_key(stream, config, timestamp=None, prefix=None):
     return str(Path(key).parent / f'{prefix}{Path(key).name}') if prefix else key
 
 
-def save_file(file_data, open_func):
+def save_jsonl_file(file_data, open_func):
     if any(file_data['file_data']):
         with open_func(file_data['file_name'], 'at', encoding='utf-8') as output_file:
             output_file.writelines(file_data['file_data'])
@@ -116,24 +116,7 @@ def save_file(file_data, open_func):
         LOGGER.debug("'{}' file saved using open_func '{}'".format(file_data['file_name'], open_func.__name__))
 
 
-def upload_files(file_data, config):
-    s3_client = s3.create_client(config)
-    for stream, file_info in file_data.items():
-        if file_info['file_name'].exists():
-            s3.upload_file(
-                s3_client,
-                str(file_info['file_name']),
-                config.get('s3_bucket'),
-                file_info['target_key'],
-                encryption_type=config.get('encryption_type'),
-                encryption_key=config.get('encryption_key'))
-            LOGGER.debug("{} file {} uploaded to {}".format(stream, file_info['target_key'], config.get('s3_bucket')))
-
-            # NOTE: Remove the local file(s)
-            file_info['file_name'].unlink()
-
-
-def persist_lines(messages, config):
+def persist_lines(messages, config, save_records=save_jsonl_file):
     state = None
     schemas = {}
     key_properties = {}
@@ -177,7 +160,7 @@ def persist_lines(messages, config):
 
             # NOTE: write the lines into the temporary file when received data over 64Mb default memory buffer
             if sys.getsizeof(file_data[stream]['file_data']) > config.get('memory_buffer'):
-                save_file(file_data[stream], config.get('open_func'))
+                save_records(file_data[stream], config.get('open_func'))
 
             state = None
         elif message_type == 'STATE':
@@ -220,12 +203,12 @@ def persist_lines(messages, config):
             LOGGER.warning('Unknown message type "{}" in message "{}"'.format(o['type'], o))
 
     for _, file_info in file_data.items():
-        save_file(file_info, config.get('open_func'))
+        save_records(file_info, config.get('open_func'))
 
     return state, file_data
 
 
-def get_config(config_path):
+def config_file(config_path):
     datetime_format = {
         'timestamp_format': '%Y%m%dT%H%M%S',
         'date_format': '%Y%m%d'
@@ -297,18 +280,35 @@ def get_config(config_path):
     return config
 
 
+def upload_files(file_data, config):
+    if not config.get('local', False):
+        s3_client = s3.create_client(config)
+        for stream, file_info in file_data.items():
+            if file_info['file_name'].exists():
+                s3.upload_file(
+                    s3_client,
+                    str(file_info['file_name']),
+                    config.get('s3_bucket'),
+                    file_info['target_key'],
+                    encryption_type=config.get('encryption_type'),
+                    encryption_key=config.get('encryption_key'))
+                LOGGER.debug("{} file {} uploaded to {}".format(stream, file_info['target_key'], config.get('s3_bucket')))
+
+                # NOTE: Remove the local file(s)
+                file_info['file_name'].unlink()
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', help='Config file', required=True)
     args = parser.parse_args()
 
-    config = get_config(args.config)
+    config = config_file(args.config)
 
     state, file_data = persist_lines(sys.stdin, config)
 
     # NOTE: Upload created files to S3
-    if not config.get('local', False):
-        upload_files(file_data, config)
+    upload_files(file_data, config)
 
     emit_state(state)
     LOGGER.debug('Exiting normally')
