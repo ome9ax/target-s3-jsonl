@@ -1,11 +1,22 @@
 # Change Log
 
-## [1.1.0](https://github.com/ome9ax/target-s3-jsonl/tree/1.1.0) (2022-04-07)
-**Full Changelog**: https://github.com/ome9ax/target-s3-jsonl/compare/1.0.1...1.1.0
+## [1.2.0](https://github.com/ome9ax/target-s3-jsonl/tree/1.2.0) (2022-04-11)
 
-## What's Changed
+### What's Changed
+* Upgrade version to 1.1.0: changelog by @ome9ax in https://github.com/ome9ax/target-s3-jsonl/pull/33
+* [jsonschema] Remove the deprecated custom exception to Handle `multipleOf` overflow fixed in jsonschema v4.0.0 by @ome9ax in https://github.com/ome9ax/target-s3-jsonl/pull/34
+* [jsonschema] remove validation exception catching by @ome9ax in https://github.com/ome9ax/target-s3-jsonl/pull/36
+* [persist_lines] save_records argument by @ome9ax in https://github.com/ome9ax/target-s3-jsonl/pull/37
+
+**Full Changelog**: https://github.com/ome9ax/target-s3-jsonl/compare/1.1.0...1.2.0
+
+## [1.1.0](https://github.com/ome9ax/target-s3-jsonl/tree/1.1.0) (2022-04-07)
+
+### What's Changed
 * [Python] Advanced string formatting by @ome9ax in https://github.com/ome9ax/target-s3-jsonl/pull/31
 * Upgrade version to 1.1.0 by @ome9ax in https://github.com/ome9ax/target-s3-jsonl/pull/32
+
+**Full Changelog**: https://github.com/ome9ax/target-s3-jsonl/compare/1.0.1...1.1.0
 
 ## [1.0.1](https://github.com/ome9ax/target-s3-jsonl/tree/1.0.1) (2022-04-06)
 [Full Changelog](https://github.com/ome9ax/target-s3-jsonl/compare/1.0.0...1.0.1)

@@ -9,7 +9,7 @@ import argparse
 from target import (
     emit_state,
     persist_lines,
-    get_config,
+    config_file,
     s3
 )
 
@@ -33,13 +33,31 @@ CONFIG_PARAMS = {
 
 
 def get_s3_config(config_path):
-    config = get_config(config_path)
+    config = config_file(config_path)
 
     missing_params = {'s3_bucket'} - set(config.keys())
     if missing_params:
         raise Exception(f'Config is missing required settings: {missing_params}')
 
     return config
+
+
+def upload_files(file_data, config):
+    if not config.get('local', False):
+        s3_client = s3.create_client(config)
+        for stream, file_info in file_data.items():
+            if file_info['file_name'].exists():
+                s3.upload_file(
+                    s3_client,
+                    str(file_info['file_name']),
+                    config.get('s3_bucket'),
+                    file_info['target_key'],
+                    encryption_type=config.get('encryption_type'),
+                    encryption_key=config.get('encryption_key'))
+                LOGGER.debug("{} file {} uploaded to {}".format(stream, file_info['target_key'], config.get('s3_bucket')))
+
+                # NOTE: Remove the local file(s)
+                file_info['file_name'].unlink()
 
 
 def upload_files(file_data, config):

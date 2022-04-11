@@ -13,7 +13,7 @@ from target import (
     datetime,
     argparse,
     json,
-    save_file,
+    save_jsonl_file,
 )
 
 # Package imports
@@ -160,7 +160,7 @@ def test_upload_files(config, file_metadata):
 
     Path(config['temp_dir']).mkdir(parents=True, exist_ok=True)
     for _, file_info in file_metadata.items():
-        save_file(file_info, {'open_func': open})
+        save_jsonl_file(file_info, {'open_func': open})
 
     conn = boto3.resource('s3', region_name='us-east-1')
     conn.create_bucket(Bucket=config['s3_bucket'])
