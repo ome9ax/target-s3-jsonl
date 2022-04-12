@@ -15,7 +15,7 @@ from target import (
 
 from target.file import config_compression
 
-from target_s3_jsonl.logger import get_logger
+from target.logger import get_logger
 LOGGER = get_logger()
 
 CONFIG_PARAMS = {
@@ -32,8 +32,15 @@ CONFIG_PARAMS = {
 }
 
 
-def get_s3_config(config_path):
+def get_s3_config(config_path, datetime_format={
+        'timestamp_format': '%Y%m%dT%H%M%S',
+        'date_format': '%Y%m%d'}):
     config = config_file(config_path)
+
+    config['path_template'] = config['path_template'] \
+        .replace('{timestamp}', '{date_time:' + datetime_format['timestamp_format'] + '}') \
+        .replace('{date}', '{date_time:' + datetime_format['date_format'] + '}') \
+        .replace('{timestamp:', '{date_time:').replace('{date:', '{date_time:')
 
     missing_params = {'s3_bucket'} - set(config.keys())
     if missing_params:
