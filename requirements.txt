@@ -1,1 +1,1 @@
-git+https://gitlab.com/omegax/target-core.git
+target-core==0.0.1

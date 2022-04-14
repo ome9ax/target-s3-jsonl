@@ -78,12 +78,12 @@ def config():
         'aws_access_key_id': 'ACCESS-KEY',
         'aws_secret_access_key': 'SECRET',
         's3_bucket': 'BUCKET',
-        'temp_dir': 'tests/output',
+        'work_dir': 'tests/output',
         'memory_buffer': 2000000,
         'compression': 'none',
         'timezone_offset': 0,
-        'naming_convention': '{stream}-{timestamp:%Y%m%dT%H%M%S}.jsonl',
-        'naming_convention_default': '{stream}-{timestamp:%Y%m%dT%H%M%S}.json',
+        'path_template': '{stream}-{date_time:%Y%m%dT%H%M%S}.jsonl',
+        'path_template_default': '{stream}-{date_time:%Y%m%dT%H%M%S}.json',
         'open_func': open
     }
 
@@ -140,14 +140,15 @@ def test_get_s3_config(config):
     '''TEST : extract and enrich the configuration'''
 
     config.pop('file_type')
-    config.pop('open_func')
     assert get_s3_config(str(Path('tests', 'resources', 'config.json'))) == config
 
     assert get_s3_config(str(Path('tests', 'resources', 'config_naked.json'))) == {
         's3_bucket': 'BUCKET',
-        'naming_convention': '{stream}-{timestamp:%Y%m%dT%H%M%S}.json',
+        'path_template': '{stream}-{date_time:%Y%m%dT%H%M%S}.json',
         'memory_buffer': 64e6,
-        'naming_convention_default': '{stream}-{timestamp:%Y%m%dT%H%M%S}.json'
+        'compression': 'none',
+        'path_template_default': '{stream}-{date_time:%Y%m%dT%H%M%S}.json',
+        'open_func': open
     }
 
     with raises(Exception):
@@ -158,7 +159,7 @@ def test_get_s3_config(config):
 def test_upload_files(config, file_metadata):
     '''TEST : simple upload_files call'''
 
-    Path(config['temp_dir']).mkdir(parents=True, exist_ok=True)
+    Path(config['work_dir']).mkdir(parents=True, exist_ok=True)
     for _, file_info in file_metadata.items():
         save_jsonl_file(file_info, {'open_func': open})
 
@@ -169,7 +170,7 @@ def test_upload_files(config, file_metadata):
 
     assert not file_metadata['tap_dummy_test-test_table_three']['file_name'].exists()
 
-    clear_dir(Path(config['temp_dir']))
+    clear_dir(Path(config['work_dir']))
 
 
 @mock_s3
@@ -210,4 +211,4 @@ def test_main(monkeypatch, capsys, patch_datetime, patch_argument_parser, input_
     for _, file_info in file_metadata.items():
         assert file_info['file_name'].exists()
 
-    clear_dir(Path(config['temp_dir']))
+    clear_dir(Path(config['work_dir']))
