@@ -9,7 +9,6 @@ from moto import mock_s3
 
 from target import (
     sys,
-    Path,
     datetime,
     argparse,
     json,
@@ -18,6 +17,8 @@ from target import (
 
 # Package imports
 from target_s3_jsonl import (
+    Path,
+    run,
     upload_files,
     get_s3_config,
     main,
@@ -73,17 +74,18 @@ def config():
     '''Use custom configuration set'''
 
     return {
-        'file_type': 'jsonl',
+        'date_time': dt.strptime('2021-08-11 06:39:38.321056+00:00', '%Y-%m-%d %H:%M:%S.%f%z'),
         'add_metadata_columns': False,
         'aws_access_key_id': 'ACCESS-KEY',
         'aws_secret_access_key': 'SECRET',
         's3_bucket': 'BUCKET',
         'work_dir': 'tests/output',
+        'work_path': Path('tests/output'),
         'memory_buffer': 2000000,
         'compression': 'none',
         'timezone_offset': 0,
         'path_template': '{stream}-{date_time:%Y%m%dT%H%M%S}.jsonl',
-        'path_template_default': '{stream}-{date_time:%Y%m%dT%H%M%S}.json',
+        # 'path_template_default': '{stream}-{date_time:%Y%m%dT%H%M%S}.json',
         'open_func': open
     }
 
@@ -114,16 +116,16 @@ def file_metadata():
 
     return {
         'tap_dummy_test-test_table_one': {
-            'target_key': 'tap_dummy_test-test_table_one-20210811T063938.json',
-            'file_name': Path('tests/output/tap_dummy_test-test_table_one-20210811T063938.json'),
+            'relative_path': 'tap_dummy_test-test_table_one-20210811T063938.jsonl',
+            'absolute_path': Path('tests/output/tap_dummy_test-test_table_one-20210811T063938.jsonl'),
             'file_data': []},
         'tap_dummy_test-test_table_two': {
-            'target_key': 'tap_dummy_test-test_table_two-20210811T063938.json',
-            'file_name': Path('tests/output/tap_dummy_test-test_table_two-20210811T063938.json'),
+            'relative_path': 'tap_dummy_test-test_table_two-20210811T063938.jsonl',
+            'absolute_path': Path('tests/output/tap_dummy_test-test_table_two-20210811T063938.jsonl'),
             'file_data': []},
         'tap_dummy_test-test_table_three': {
-            'target_key': 'tap_dummy_test-test_table_three-20210811T063938.json',
-            'file_name': Path('tests/output/tap_dummy_test-test_table_three-20210811T063938.json'),
+            'relative_path': 'tap_dummy_test-test_table_three-20210811T063938.jsonl',
+            'absolute_path': Path('tests/output/tap_dummy_test-test_table_three-20210811T063938.jsonl'),
             'file_data': [
                 '{"c_pk": 1, "c_varchar": "1", "c_int": 1, "c_time": "04:00:00"}\n',
                 '{"c_pk": 2, "c_varchar": "2", "c_int": 2, "c_time": "07:15:00"}\n',
@@ -136,20 +138,24 @@ def clear_dir(dir_path):
     dir_path.rmdir()
 
 
-def test_get_s3_config(config):
+def test_get_s3_config(monkeypatch, patch_datetime, config):
     '''TEST : extract and enrich the configuration'''
 
-    config.pop('file_type')
-    assert get_s3_config(str(Path('tests', 'resources', 'config.json'))) == config
+    date_time = dt.strptime('2021-08-11 06:39:38.321056+00:00', '%Y-%m-%d %H:%M:%S.%f%z').replace(tzinfo=None)
+    config_date_time = {'date_time': date_time}
+    assert get_s3_config(str(Path('tests', 'resources', 'config.json'))) == config | config_date_time
 
-    assert get_s3_config(str(Path('tests', 'resources', 'config_naked.json'))) == {
+    # NOTE: work around the random temporary working dir
+    config_work_dir = {'work_dir': 'tests/output', 'work_path': Path('tests/output')}
+    assert get_s3_config(str(Path('tests', 'resources', 'config_naked.json'))) \
+        | config_work_dir == {
         's3_bucket': 'BUCKET',
         'path_template': '{stream}-{date_time:%Y%m%dT%H%M%S}.json',
         'memory_buffer': 64e6,
         'compression': 'none',
-        'path_template_default': '{stream}-{date_time:%Y%m%dT%H%M%S}.json',
+        # 'path_template_default': '{stream}-{date_time:%Y%m%dT%H%M%S}.json',
         'open_func': open
-    }
+    } | config_date_time | config_work_dir
 
     with raises(Exception):
         get_s3_config(str(Path('tests', 'resources', 'config_no_bucket.json')))
@@ -161,14 +167,14 @@ def test_upload_files(config, file_metadata):
 
     Path(config['work_dir']).mkdir(parents=True, exist_ok=True)
     for _, file_info in file_metadata.items():
-        save_jsonl_file(file_info, {'open_func': open})
+        run(save_jsonl_file(None, {'open_func': open}, file_info))
 
     conn = boto3.resource('s3', region_name='us-east-1')
     conn.create_bucket(Bucket=config['s3_bucket'])
 
     upload_files(file_metadata, config)
 
-    assert not file_metadata['tap_dummy_test-test_table_three']['file_name'].exists()
+    assert not file_metadata['tap_dummy_test-test_table_three']['absolute_path'].exists()
 
     clear_dir(Path(config['work_dir']))
 
@@ -188,7 +194,7 @@ def test_main(monkeypatch, capsys, patch_datetime, patch_argument_parser, input_
     assert captured.out == json.dumps(state) + '\n'
 
     for _, file_info in file_metadata.items():
-        assert not file_info['file_name'].exists()
+        assert not file_info['absolute_path'].exists()
 
     class argument_parser:
 
@@ -209,6 +215,6 @@ def test_main(monkeypatch, capsys, patch_datetime, patch_argument_parser, input_
     assert captured.out == json.dumps(state) + '\n'
 
     for _, file_info in file_metadata.items():
-        assert file_info['file_name'].exists()
+        assert file_info['absolute_path'].exists()
 
-    clear_dir(Path(config['work_dir']))
+    clear_dir(config['work_path'])
