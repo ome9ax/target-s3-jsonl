@@ -35,7 +35,7 @@ def create_client(config):
     aws_endpoint_url = config.get('aws_endpoint_url')
     role_arn = config.get('role_arn')
 
-    endpoint_parmas = {'endpoint_url': aws_endpoint_url} if aws_endpoint_url else {}
+    endpoint_params = {'endpoint_url': aws_endpoint_url} if aws_endpoint_url else {}
 
     # AWS credentials based authentication
     if aws_access_key_id and aws_secret_access_key:
