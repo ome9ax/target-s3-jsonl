@@ -34,9 +34,9 @@ def create_client(config):
     aws_profile = config.get('aws_profile') or os.environ.get('AWS_PROFILE')
     aws_endpoint_url = config.get('aws_endpoint_url')
     role_arn = config.get('role_arn')
-    
+
     endpoint_parmas = {'endpoint_url': aws_endpoint_url} if aws_endpoint_url else {}
-    
+
     # AWS credentials based authentication
     if aws_access_key_id and aws_secret_access_key:
         aws_session = boto3.session.Session(
@@ -46,18 +46,22 @@ def create_client(config):
     # AWS Profile based authentication
     else:
         aws_session = boto3.session.Session(profile_name=aws_profile)
+
+    # config specifies a particular role to assume
+    # we create a session & s3-client with this role
     if role_arn:
         role_name = role_arn.split('/', 1)[1]
         sts = aws_session.client('sts', **endpoint_params)
-        resp = sts.assume_role(RoleArn=role_arn, RoleSessionName=f'Meltano-{role_name}-profile:{aws_profile}-{int(time.time())}')
+        resp = sts.assume_role(RoleArn=role_arn, RoleSessionName=f'Meltano-role:{role_name}-profile:{aws_profile}')
         credentials = {
             "aws_access_key_id": resp["Credentials"]["AccessKeyId"],
             "aws_secret_access_key": resp["Credentials"]["SecretAccessKey"],
             "aws_session_token": resp["Credentials"]["SessionToken"],
         }
         aws_session = boto3.Session(**credentials)
+        LOGGER.info(f"Creating s3 client with role {role_name}")
     return aws_session.client('s3', **endpoint_params)
-    
+
 
 # pylint: disable=too-many-arguments
 @retry_pattern()
