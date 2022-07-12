@@ -53,7 +53,7 @@ def create_client(config):
     if role_arn:
         role_name = role_arn.split('/', 1)[1]
         sts = aws_session.client('sts', **endpoint_params)
-        resp = sts.assume_role(RoleArn=role_arn, RoleSessionName=f'Meltano-role={role_name}-profile={aws_profile}')
+        resp = sts.assume_role(RoleArn=role_arn, RoleSessionName=f'role-name={role_name}-profile={aws_profile}')
         credentials = {
             "aws_access_key_id": resp["Credentials"]["AccessKeyId"],
             "aws_secret_access_key": resp["Credentials"]["SecretAccessKey"],
