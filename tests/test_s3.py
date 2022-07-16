@@ -3,12 +3,12 @@
 from copy import deepcopy
 from pathlib import Path
 import json
-
-# Third party imports
 import os
-from pytest import fixture, raises
+import re
+
 import boto3
-from moto import mock_s3
+from moto import mock_s3, mock_sts
+from pytest import fixture, raises
 
 # Package imports
 from target_s3_jsonl.s3 import create_client, upload_file, log_backoff_attempt
@@ -21,6 +21,11 @@ def config():
     with open(Path('tests', 'resources', 'config.json'), 'r', encoding='utf-8') as config_file:
         return json.load(config_file)
 
+
+@fixture
+def config_assume_role():
+    with open(Path('tests', 'resources', 'config_assume_role.json'), 'r', encoding='utf-8') as f:
+        return json.load(f)
 
 @fixture(scope='module')
 def aws_credentials():
@@ -36,9 +41,16 @@ def test_log_backoff_attempt(caplog):
     '''TEST : simple upload_files call'''
 
     log_backoff_attempt({'tries': 99})
+    pat = r'INFO     root:s3.py:\d{2} Error detected communicating with Amazon, triggering backoff: 99 try\n'
+    assert re.match(pat, caplog.text)
 
-    assert caplog.text == 'INFO     root:s3.py:22 Error detected communicating with Amazon, triggering backoff: 99 try\n'
 
+@mock_sts
+@mock_s3
+def test_create_client_with_assumed_role(config_assume_role, caplog):
+    """Assert client is created with assumed role when role_arn is specified""" 
+    client = create_client(config_assume_role)
+    assert caplog.text.endswith('Creating s3 client with role TestAssumeRole\n')
 
 @mock_s3
 def test_create_client(aws_credentials, config):
