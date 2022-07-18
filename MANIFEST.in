@@ -1,1 +1,1 @@
-include LICENSE, target_s3_jsonl/logging.conf
+include requirements.txt LICENSE target_s3_jsonl/logging.conf

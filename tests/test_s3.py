@@ -27,6 +27,7 @@ def config_assume_role():
     with open(Path('tests', 'resources', 'config_assume_role.json'), 'r', encoding='utf-8') as f:
         return json.load(f)
 
+
 @fixture(scope='module')
 def aws_credentials():
     """Mocked AWS Credentials for moto."""
@@ -48,9 +49,10 @@ def test_log_backoff_attempt(caplog):
 @mock_sts
 @mock_s3
 def test_create_client_with_assumed_role(config_assume_role, caplog):
-    """Assert client is created with assumed role when role_arn is specified""" 
-    client = create_client(config_assume_role)
+    """Assert client is created with assumed role when role_arn is specified"""
+    create_client(config_assume_role)
     assert caplog.text.endswith('Creating s3 client with role TestAssumeRole\n')
+
 
 @mock_s3
 def test_create_client(aws_credentials, config):
