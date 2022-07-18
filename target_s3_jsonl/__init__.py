@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-__version__ = '1.2.0'
+__version__ = '1.2.1'
 
 import argparse
 import gzip
@@ -238,6 +238,7 @@ def config_file(config_path):
         'aws_session_token',
         'aws_endpoint_url',
         'aws_profile',
+        'role_arn',
         's3_bucket',
         's3_key_prefix',
         'encryption_type',
