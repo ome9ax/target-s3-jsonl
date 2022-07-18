@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 import os
-import re
-import time
 import backoff
 import boto3
 from botocore.exceptions import ClientError
