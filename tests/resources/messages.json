@@ -1,0 +1,6 @@
+{"type": "SCHEMA", "stream": "users", "key_properties": ["id"], "schema": {"required": ["id"], "type": "object", "properties": {"id": {"type": "integer"}}}}
+{"type": "RECORD", "stream": "users", "record": {"id": 1, "name": "Eddy"}}
+{"type": "RECORD", "stream": "users", "record": {"id": 2, "name": "Sabrina"}}
+{"type": "SCHEMA", "stream": "locations", "key_properties": ["id"], "schema": {"required": ["id"], "type": "object", "properties": {"id": {"type": "integer"}}}}
+{"type": "RECORD", "stream": "locations", "record": {"id": 1, "name": "Everywhere"}}
+{"type": "STATE", "value": {"users": 2, "locations": 1}}

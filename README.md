@@ -1,6 +1,6 @@
 # target-s3-jsonl
 
-![GitHub - License](https://img.shields.io/github/license/ome9ax/target-s3-jsonl)
+[![GitHub - License](https://img.shields.io/github/license/ome9ax/target-s3-jsonl)](https://github.com/ome9ax/target-s3-jsonl/blob/main/LICENSE)
 [![Python package builder](https://github.com/ome9ax/target-s3-jsonl/workflows/Python%20package/badge.svg)](https://github.com/ome9ax/target-s3-jsonl/actions)
 [![codecov](https://codecov.io/gh/ome9ax/target-s3-jsonl/branch/main/graph/badge.svg?token=KV0cn4jKs2)](https://codecov.io/gh/ome9ax/target-s3-jsonl)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/target-s3-jsonl.svg)](https://pypi.org/project/target-s3-jsonl)
