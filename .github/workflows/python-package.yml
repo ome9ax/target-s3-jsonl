@@ -38,14 +38,14 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    # - name: Cache pip Linux
-    #   uses: actions/cache@v3
-    #   if: startsWith(runner.os, 'Linux')
-    #   with:
-    #     path: ~/.cache/pip
-    #     key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
-    #     restore-keys: |
-    #       ${{ runner.os }}-pip-
+    - name: Cache pip Linux
+      uses: actions/cache@v3
+      if: startsWith(runner.os, 'Linux')
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
     - name: Cache pip macOS
       uses: actions/cache@v3
       if: startsWith(runner.os, 'macOS')
