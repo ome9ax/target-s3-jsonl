@@ -68,30 +68,28 @@ jobs:
         python -m venv venv || virtualenv venv
         . venv/bin/activate
         pip install --upgrade pip # setuptools
-        pip install .[test,lint,static,dist]
+        # pip install .[test,lint,static,dist]
+        pip install tox
 
     - name: Get pip cache dir
       id: pip-cache
       run: |
         echo "::set-output name=dir::$(pip cache dir)"
-    # - name: pip cache
-    #   uses: actions/cache@v3
-    #   with:
-    #     path: ${{ steps.pip-cache.outputs.dir }}
-    #     key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
-    #     restore-keys: |
-    #       ${{ runner.os }}-pip-
 
-    - name: Lint with flake8
+    # - name: Lint with flake8
+    #   run: |
+    #     . venv/bin/activate
+    #     # stop the build if there are Python syntax errors or undefined names
+    #     # exit-zero treats all errors as warnings. The GitHub editor is 255 chars wide
+    #     flake8
+    # - name: Static typing with mypy
+    #   run: |
+    #     . venv/bin/activate
+    #     mypy
+    - name: Lint with flake8 & Static typing with mypy
       run: |
         . venv/bin/activate
-        # stop the build if there are Python syntax errors or undefined names
-        # exit-zero treats all errors as warnings. The GitHub editor is 255 chars wide
-        flake8
-    - name: Static typing with mypy
-      run: |
-        . venv/bin/activate
-        mypy
+        tox -e lint,static --parallel
     - name: pip cache
       uses: actions/cache@v3
       with:
@@ -103,7 +101,9 @@ jobs:
     - name: Test
       run: |
         . venv/bin/activate
-        pytest
+        # pytest
+        # tox --parallel
+        tox -e py
     - name: Upload coverage test results to Codecov
       uses: codecov/codecov-action@v2
       if: |
@@ -121,7 +121,9 @@ jobs:
     - name: Build distribution package
       run: |
         . venv/bin/activate
-        python setup.py sdist bdist_wheel
+        # python setup.py sdist bdist_wheel
+        pip install build
+        python -m build
         ls -l dist
     - name: Publish distribution package to TestPyPI
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')

@@ -33,7 +33,8 @@ def _retry_pattern() -> Callable:
         backoff.expo,
         ClientError,
         max_tries=5,
-        on_backoff=_log_backoff_attempt,  # type: ignore
+        # on_backoff=_log_backoff_attempt,  # type: ignore
+        on_backoff=_log_backoff_attempt,
         factor=10)
 
 
