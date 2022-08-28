@@ -68,7 +68,7 @@ jobs:
         python -m venv venv || virtualenv venv
         . venv/bin/activate
         pip install --upgrade pip # setuptools
-        pip install .[test,lint,dist]
+        pip install .[test,lint,static,dist]
 
     - name: Get pip cache dir
       id: pip-cache
