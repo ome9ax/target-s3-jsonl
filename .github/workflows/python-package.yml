@@ -88,6 +88,10 @@ jobs:
         # stop the build if there are Python syntax errors or undefined names
         # exit-zero treats all errors as warnings. The GitHub editor is 255 chars wide
         flake8
+    - name: Static typing with mypy
+      run: |
+        . venv/bin/activate
+        mypy
     - name: Test
       run: |
         . venv/bin/activate
