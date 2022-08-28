@@ -38,14 +38,14 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Cache pip Linux
-      uses: actions/cache@v3
-      if: startsWith(runner.os, 'Linux')
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+    # - name: Cache pip Linux
+    #   uses: actions/cache@v3
+    #   if: startsWith(runner.os, 'Linux')
+    #   with:
+    #     path: ~/.cache/pip
+    #     key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
+    #     restore-keys: |
+    #       ${{ runner.os }}-pip-
     - name: Cache pip macOS
       uses: actions/cache@v3
       if: startsWith(runner.os, 'macOS')
@@ -74,13 +74,13 @@ jobs:
       id: pip-cache
       run: |
         echo "::set-output name=dir::$(pip cache dir)"
-    - name: pip cache
-      uses: actions/cache@v3
-      with:
-        path: ${{ steps.pip-cache.outputs.dir }}
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+    # - name: pip cache
+    #   uses: actions/cache@v3
+    #   with:
+    #     path: ${{ steps.pip-cache.outputs.dir }}
+    #     key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
+    #     restore-keys: |
+    #       ${{ runner.os }}-pip-
 
     - name: Lint with flake8
       run: |
@@ -92,6 +92,14 @@ jobs:
       run: |
         . venv/bin/activate
         mypy
+    - name: pip cache
+      uses: actions/cache@v3
+      with:
+        path: ${{ steps.pip-cache.outputs.dir }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
     - name: Test
       run: |
         . venv/bin/activate

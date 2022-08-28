@@ -43,7 +43,8 @@ module = [
 ]
 
 [[tool.mypy.overrides]] # Overrides for currently untyped modules
+ignore_errors = true
+
 module = [
     "tests.*"
 ]
-ignore_errors = true
