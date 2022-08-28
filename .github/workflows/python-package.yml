@@ -38,14 +38,14 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    # - name: Cache pip Linux
-    #   uses: actions/cache@v3
-    #   if: startsWith(runner.os, 'Linux')
-    #   with:
-    #     path: ~/.cache/pip
-    #     key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
-    #     restore-keys: |
-    #       ${{ runner.os }}-pip-
+    - name: Cache pip Linux
+      uses: actions/cache@v3
+      if: startsWith(runner.os, 'Linux')
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
     - name: Cache pip macOS
       uses: actions/cache@v3
       if: startsWith(runner.os, 'macOS')
@@ -89,7 +89,7 @@ jobs:
     - name: Lint with flake8 & Static typing with mypy
       run: |
         . venv/bin/activate
-        tox -e lint,static --parallel
+        TOX_PARALLEL_NO_SPINNER=1 tox --parallel -e lint,static
     - name: pip cache
       uses: actions/cache@v3
       with:
