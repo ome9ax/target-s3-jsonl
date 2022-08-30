@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     install_requires=[
-        'jsonschema==4.9.1',
+        'jsonschema==4.14.0',
         'boto3==1.24.56',
         'backoff==2.1.2'
     ]
