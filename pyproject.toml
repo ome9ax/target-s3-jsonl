@@ -39,10 +39,7 @@ strict_equality = true
 
 [[tool.mypy.overrides]] # Overrides for currently untyped modules
 module = [
-    "target.*",
-    "target.file.*",
-    "target.logger.*",
-    "target.s3.*"
+    "target_s3_jsonl.*"
 ]
 
 [[tool.mypy.overrides]] # Overrides for currently untyped modules
