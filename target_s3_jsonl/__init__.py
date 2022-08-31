@@ -161,10 +161,9 @@ def persist_lines(messages, config, save_records=save_jsonl_file):
             stream = o['stream']
             schemas[stream] = o['schema']
 
-            if config.get('add_metadata_columns'):
-                schemas[stream] = add_metadata_columns_to_schema(o)
-            else:
-                adjust_decimal_precision_for_schema(schemas[stream])
+            schemas[stream] = add_metadata_columns_to_schema(o) if config.get('add_metadata_columns') else o
+
+            adjust_decimal_precision_for_schema(schemas[stream])
 
             # NOTE: prevent exception *** jsonschema.exceptions.UnknownType: Unknown type 'SCHEMA' for validator.
             #       'type' is a key word for jsonschema validator which is different from `{'type': 'SCHEMA'}` as the message type.

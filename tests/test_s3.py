@@ -40,9 +40,9 @@ def aws_credentials():
 def test_log_backoff_attempt(caplog):
     '''TEST : simple upload_files call'''
 
-    log_backoff_attempt({'tries': 3})
+    log_backoff_attempt({'tries': 2})
 
-    assert 'Error detected communicating with Amazon, triggering backoff: 3 try' in caplog.text
+    assert 'Error detected communicating with Amazon, triggering backoff: 2 try' in caplog.text
 
 
 @mock_sts
