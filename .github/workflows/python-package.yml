@@ -68,7 +68,7 @@ jobs:
         python -m venv venv || virtualenv venv
         . venv/bin/activate
         pip install --upgrade pip # setuptools
-        pip install .[test,lint,dist]
+        pip install tox
 
     - name: Get pip cache dir
       id: pip-cache
@@ -87,11 +87,11 @@ jobs:
         . venv/bin/activate
         # stop the build if there are Python syntax errors or undefined names
         # exit-zero treats all errors as warnings. The GitHub editor is 255 chars wide
-        flake8 --show-source --statistics --count
+        TOX_PARALLEL_NO_SPINNER=1 tox -e lint
     - name: Test
       run: |
         . venv/bin/activate
-        pytest
+        TOX_PARALLEL_NO_SPINNER=1 tox -e py
     - name: Upload coverage test results to Codecov
       uses: codecov/codecov-action@v2
       if: |
@@ -109,7 +109,8 @@ jobs:
     - name: Build distribution package
       run: |
         . venv/bin/activate
-        python setup.py sdist bdist_wheel
+        pip install build
+        python -m build
         ls -l dist
     - name: Publish distribution package to TestPyPI
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
