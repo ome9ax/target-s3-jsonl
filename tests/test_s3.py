@@ -25,7 +25,7 @@ from moto import mock_s3, mock_sts
 
 # Package imports
 from target.file import save_json
-from target_s3_jsonl.s3 import (
+from target_s3_json.s3 import (
     _log_backoff_attempt, config_compression, create_session, get_encryption_args, put_object, upload_file, upload_files, config_legacy, main
 )
 

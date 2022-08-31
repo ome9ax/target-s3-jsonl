@@ -8,7 +8,7 @@ from pathlib import Path
 from target._logger import get_logger
 from .s3 import main
 
-LOGGER = get_logger(Path(__file__).parent / 'logging.conf')
+LOGGER = get_logger(Path(__file__).with_name('logging.conf'))
 
 CONFIG_PARAMS = {
     'local',

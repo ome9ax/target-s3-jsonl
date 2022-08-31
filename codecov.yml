@@ -1,5 +1,5 @@
 ignore:
-  - target-s3-jsonl/__init__.py
+  - target-s3-json/__init__.py
   - tests/.*
   - ./setup.py
 
