@@ -11,7 +11,6 @@ from moto import mock_s3
 # Package imports
 from target_s3_jsonl import (
     sys,
-    Decimal,
     datetime,
     argparse,
     gzip,

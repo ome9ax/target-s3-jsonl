@@ -10,7 +10,6 @@ from pathlib import Path
 import sys
 import tempfile
 import datetime
-from decimal import Decimal
 from uuid import uuid4
 
 from jsonschema import Draft4Validator, FormatChecker
