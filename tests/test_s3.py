@@ -2,7 +2,7 @@
 # Standard library imports
 import sys
 from os import environ
-from asyncio import run
+from asyncio import Semaphore, run
 from copy import deepcopy
 from re import match
 import lzma
@@ -26,7 +26,7 @@ from moto import mock_s3, mock_sts
 # Package imports
 from target.file import save_json
 from target_s3_json.s3 import (
-    _log_backoff_attempt, config_compression, create_session, get_encryption_args, put_object, upload_file, upload_files, config_legacy, main
+    _log_backoff_attempt, config_compression, create_session, get_encryption_args, put_object, upload_file, upload_files, config_s3, main
 )
 
 from .conftest import clear_dir
@@ -145,6 +145,7 @@ def config(patch_datetime, config_raw):
         # 'date_time': dt.strptime('2021-08-11 06:39:38.321056+00:00', '%Y-%m-%d %H:%M:%S.%f%z'),
         'date_time': datetime.datetime.utcnow(),
         'work_path': Path(config_raw['work_dir']),
+        'concurrency_max': 1000,
         'open_func': open
     }
 
@@ -376,13 +377,14 @@ def test_upload_file(config):
     conn.create_bucket(Bucket=config['s3_bucket'])
 
     client: BaseClient = create_session(config).client('s3')
+    semaphore = Semaphore(99)
 
     file_metadata = {
         'absolute_path': Path('tests', 'resources', 'messages.json'),
         'relative_path': 'dummy/messages.json'}
 
     run(upload_file(
-        config,
+        config | {'semaphore': semaphore},
         file_metadata,
         client))
 
@@ -396,7 +398,7 @@ def test_upload_file(config):
         'absolute_path': Path('tests', 'resources', 'messages.json'),
         'relative_path': 'dummy/messages_kms.json'}
     run(upload_file(
-        config | {'encryption_type': 'kms', 'encryption_key': None},
+        config | {'semaphore': semaphore, 'encryption_type': 'kms', 'encryption_key': None},
         file_metadata,
         client))
 
@@ -410,7 +412,7 @@ def test_upload_file(config):
         'absolute_path': Path('tests', 'resources', 'messages.json'),
         'relative_path': 'dummy/messages_kms.json'}
     run(upload_file(
-        config | {'encryption_type': 'kms', 'encryption_key': 'xXx'},
+        config | {'semaphore': semaphore, 'encryption_type': 'kms', 'encryption_key': 'xXx'},
         file_metadata,
         client))
 
@@ -422,7 +424,7 @@ def test_upload_file(config):
     # NOTE: 'dummy' encryption_type
     with raises(Exception):
         run(upload_file(
-            config | {'encryption_type': 'dummy'},
+            config | {'semaphore': semaphore, 'encryption_type': 'dummy'},
             file_metadata | {'relative_path': 'dummy/messages_dummy.json'},
             client))
 
@@ -452,28 +454,28 @@ def test_upload_files(config, file_metadata):
         assert not path['absolute_path'].exists()
 
 
-def test_config_legacy(config_raw):
+def test_config_s3(config_raw):
 
     config = deepcopy(config_raw)
     config['temp_dir'] = config.pop('work_dir')
     config['naming_convention'] = config.pop('path_template')
-    assert config_legacy(config) == config_raw
+    assert config_s3(config) == config_raw | {'concurrency_max': 1000}
 
     config = deepcopy(config_raw)
     config['temp_dir'] = config.pop('work_dir')
     config.pop('path_template')
     config['naming_convention'] = '{stream}-{timestamp}.json'
-    assert config_legacy(config) == config_raw | {'path_template': '{stream}-{date_time:%Y%m%dT%H%M%S}.json'}
+    assert config_s3(config) == config_raw | {'concurrency_max': 1000, 'path_template': '{stream}-{date_time:%Y%m%dT%H%M%S}.json'}
 
     config = deepcopy(config_raw)
     config['temp_dir'] = config.pop('work_dir')
     config.pop('path_template')
     config['naming_convention'] = '{stream}-{date}.json'
-    assert config_legacy(config) == config_raw | {'path_template': '{stream}-{date_time:%Y%m%d}.json'}
+    assert config_s3(config) == config_raw | {'concurrency_max': 1000, 'path_template': '{stream}-{date_time:%Y%m%d}.json'}
 
     config.pop('s3_bucket')
     with raises(Exception):
-        config_legacy(config)
+        config_s3(config)
 
 
 @mock_s3

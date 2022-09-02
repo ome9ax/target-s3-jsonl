@@ -2,13 +2,14 @@
 from os import environ
 from pathlib import Path
 import sys
+# from re import Pattern, compile, match
 import argparse
 import json
 import gzip
 import lzma
 import backoff
-from typing import Callable, Dict, Any, List, TextIO
-from asyncio import to_thread, run
+from typing import Callable, Dict, Any, List, TextIO  # , Generator
+from asyncio import Semaphore, gather, shield, to_thread, run
 
 from boto3.session import Session
 from botocore.exceptions import ClientError
@@ -169,21 +170,50 @@ async def put_object(config: Dict[str, Any], file_metadata: Dict, stream_data: L
 #             #     ExtraArgs=encryption_args)
 
 
+# # NOTE: https://github.com/aws/aws-cli/issues/3784
+# async def search(client: BaseClient, bucket: str, prefix: str, regex_path: str) -> Generator:
+#     '''
+#     perform a flat listing of the files within a bucket
+#     '''
+#     regex_pattern: Pattern = compile(regex_path)
+
+#     paginator = client.get_paginator('list_objects')
+#     items = paginator.paginate(Bucket=bucket, Prefix=prefix)
+#     for file_path in map(lambda x: x.get('Key', ''), await to_thread(items.search, 'Contents')):
+#         # check files
+#         if match(regex_pattern, file_path):
+#             yield file_path
+
+
+# async def copy(
+#     client: BaseClient, semaphore: Semaphore, source_bucket: str, source_key: str, target_bucket: str, target_key: str, overwrite: bool = False) -> None:
+#     async with semaphore:
+#         LOGGER.debug(f'S3 Copy - "s3://{source_bucket}/{source_key}" to "s3://{target_bucket}/{target_key}" begins.')
+#         if not overwrite and 'Contents' in client.list_objects_v2(Bucket=target_bucket, Prefix=target_key, MaxKeys=1):
+#             LOGGER.info(f'S3 Copy - "s3://{target_bucket}/{target_key}" already exists.')
+#         else:
+#             await to_thread(client.copy, {'Bucket': source_bucket, 'Key': source_key}, target_bucket, target_key)
+#             LOGGER.info(f'S3 Copy - "s3://{source_bucket}/{source_key}" to "s3://{target_bucket}/{target_key}" copy completed.')
+
+
 @_retry_pattern()
 # def write(config: Dict[str, Any], file_meta: Dict, file_data: List) -> None:
 # async def upload_file(config: Dict[str, Any], file_metadata: Dict, file_data: List, client: Any) -> None:
-async def upload_file(config: Dict[str, Any], file_metadata: Dict, client: BaseClient) -> None:
+async def upload_file(config: Dict[str, Any], file_metadata: Dict, client: BaseClient) -> Dict:
     encryption_desc, encryption_args = get_encryption_args(config)
 
     LOGGER.info("Uploading %s to bucket %s at %s%s",
                 str(file_metadata['absolute_path']), config.get('s3_bucket'), file_metadata['relative_path'], encryption_desc)
 
-    # await client.upload_file(
-    await to_thread(client.upload_file,
-                    str(file_metadata['absolute_path']),
-                    config.get('s3_bucket'),
-                    file_metadata['relative_path'],
-                    **encryption_args)
+    async with config['semaphore']:
+        # await client.upload_file(
+        await to_thread(client.upload_file,
+                        str(file_metadata['absolute_path']),
+                        config.get('s3_bucket'),
+                        file_metadata['relative_path'],
+                        **encryption_args)
+
+    return file_metadata
 
 
 async def upload_files(file_data: Dict, config: Dict[str, Any]) -> None:
@@ -192,18 +222,30 @@ async def upload_files(file_data: Dict, config: Dict[str, Any]) -> None:
         #                                                          if config.get('aws_endpoint_url') else {})) as client:
         client: BaseClient = create_session(config).client('s3', **({'endpoint_url': config.get('aws_endpoint_url')}
                                                            if config.get('aws_endpoint_url') else {}))
-        for stream, file_metadata in file_data.items():
-            for path in file_metadata['path'].values():
-                if path['absolute_path'].exists():
-                    await upload_file(config, path, client)
-                    # run(upload_file(config, path, client))
-                    LOGGER.info("Target Core: {} file {} uploaded to {}".format(stream, path['relative_path'], config.get('s3_bucket')))
+        # for stream, file_metadata in file_data.items():
+        #     for path in file_metadata['path'].values():
+        #         if path['absolute_path'].exists():
+        #             await upload_file(config, path, client)
+        #             # run(upload_file(config, path, client))
+        #             LOGGER.info("Target Core: {} file {} uploaded to {}".format(stream, path['relative_path'], config.get('s3_bucket')))
 
-                    # NOTE: Remove the local file(s)
-                    path['absolute_path'].unlink()  # missing_ok=False
+        #             # NOTE: Remove the local file(s)
+        #             path['absolute_path'].unlink()  # missing_ok=False
+
+        semaphore = Semaphore(config['concurrency_max'])
+        paths: List = await gather(*[
+            shield(upload_file(config | {'semaphore': semaphore}, path, client))
+            for stream, file_metadata in file_data.items()
+            for path in file_metadata['path'].values()
+            if path['absolute_path'].exists()])
+
+        for path in paths:
+            # NOTE: Remove the local file(s)
+            path['absolute_path'].unlink()  # missing_ok=False
+            LOGGER.info(f"Target Core: file {path['relative_path']} uploaded to {config.get('s3_bucket')}")
 
 
-def config_legacy(config_default: Dict[str, Any], datetime_format: Dict[str, str] = {
+def config_s3(config_default: Dict[str, Any], datetime_format: Dict[str, str] = {
         'date_time_format': ':%Y%m%dT%H%M%S',
         'date_format': ':%Y%m%d'}) -> Dict[str, Any]:
 
@@ -221,6 +263,9 @@ def config_legacy(config_default: Dict[str, Any], datetime_format: Dict[str, str
             .replace('{timestamp}', '{date_time%s}' % datetime_format['date_time_format']) \
             .replace('{date}', '{date_time%s}' % datetime_format['date_format'])
 
+    if 'concurrency_max' not in config_default:
+        config_default['concurrency_max'] = 1000
+
     missing_params = {'s3_bucket'} - set(config_default.keys())
     if missing_params:
         raise Exception(f'Config is missing required settings: {missing_params}')
@@ -233,7 +278,7 @@ def main(loader: type[Loader] = Loader, lines: TextIO = sys.stdin) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', help='Config file', required=True)
     args = parser.parse_args()
-    config = file.config_compression(config_file(config_legacy(json.loads(Path(args.config).read_text(encoding='utf-8')))))
+    config = file.config_compression(config_file(config_s3(json.loads(Path(args.config).read_text(encoding='utf-8')))))
 
     s3_loader: Loader = loader(config)
     s3_loader.run(lines)
