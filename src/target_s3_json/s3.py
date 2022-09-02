@@ -8,7 +8,7 @@ import gzip
 import lzma
 import backoff
 from typing import Callable, Dict, Any, List, TextIO
-from asyncio import to_thread
+from asyncio import to_thread, run
 
 from boto3.session import Session
 from botocore.exceptions import ClientError
@@ -203,23 +203,6 @@ async def upload_files(file_data: Dict, config: Dict[str, Any]) -> None:
                     path['absolute_path'].unlink()  # missing_ok=False
 
 
-class S3Loader(Loader):  # type: ignore
-
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-
-    async def sync(self, lines: TextIO = sys.stdin) -> None:
-        # client = create_session(self.config).client('s3', **({'endpoint_url': self.config.get('aws_endpoint_url')} \
-        #     if self.config.get('aws_endpoint_url') else {}))
-        # async with create_session(self.config).create_client('s3', **({'endpoint_url': self.config.get('aws_endpoint_url')} \
-        #     if self.config.get('aws_endpoint_url') else {})) as client:
-
-        # await self.writelines(lines, writeline=partial(save_json, save=partial(put_object, client=client)))
-        await self.writelines(lines)
-
-        await upload_files(self.stream_data, self.config)
-
-
 def config_legacy(config_default: Dict[str, Any], datetime_format: Dict[str, str] = {
         'date_time_format': ':%Y%m%dT%H%M%S',
         'date_format': ':%Y%m%d'}) -> Dict[str, Any]:
@@ -245,14 +228,17 @@ def config_legacy(config_default: Dict[str, Any], datetime_format: Dict[str, str
     return config_default
 
 
-def main(loader: type[S3Loader] = S3Loader, lines: TextIO = sys.stdin) -> None:
+def main(loader: type[Loader] = Loader, lines: TextIO = sys.stdin) -> None:
     '''Main'''
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', help='Config file', required=True)
     args = parser.parse_args()
     config = file.config_compression(config_file(config_legacy(json.loads(Path(args.config).read_text(encoding='utf-8')))))
 
-    loader(config).run(lines)
+    s3_loader: Loader = loader(config)
+    s3_loader.run(lines)
+
+    run(upload_files(s3_loader.stream_data, s3_loader.config))
 
 
 # def write(config: Dict[str, Any], file_meta: Dict, file_data: List) -> None:

@@ -491,3 +491,20 @@ def test_main(capsys, patch_datetime, patch_sys_stdin, patch_argument_parser, co
 
     for file_info in file_metadata.values():
         assert not file_info['path'][1]['absolute_path'].exists()
+
+    client: BaseClient = create_session(config_raw).client('s3')
+
+    head = client.head_object(Bucket=config_raw.get('s3_bucket'), Key=file_metadata['tap_dummy_test-test_table_one']['path'][1]['relative_path'])
+    assert head['ResponseMetadata']['HTTPStatusCode'] == 200
+    assert head['ContentLength'] == 42
+    assert head['ResponseMetadata']['RetryAttempts'] == 0
+
+    head = client.head_object(Bucket=config_raw.get('s3_bucket'), Key=file_metadata['tap_dummy_test-test_table_two']['path'][1]['relative_path'])
+    assert head['ResponseMetadata']['HTTPStatusCode'] == 200
+    assert head['ContentLength'] == 150
+    assert head['ResponseMetadata']['RetryAttempts'] == 0
+
+    head = client.head_object(Bucket=config_raw.get('s3_bucket'), Key=file_metadata['tap_dummy_test-test_table_three']['path'][1]['relative_path'])
+    assert head['ResponseMetadata']['HTTPStatusCode'] == 200
+    assert head['ContentLength'] == 192
+    assert head['ResponseMetadata']['RetryAttempts'] == 0
