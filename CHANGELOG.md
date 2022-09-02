@@ -7,8 +7,10 @@
 
 **Full Changelog**: https://github.com/ome9ax/target-s3-jsonl/compare/1.2.1...1.2.2
 
+## [1.2.1](https://github.com/ome9ax/target-s3-jsonl/tree/1.2.1) (2022-07-13)
+
 ### What's Changed
-* Added optional config parameter `role_arn`, which allows assuming additional roles.
+* Added optional config parameter `role_arn`, which allows assuming additional roles. by @haleemur
 
 **Full Changelog**: https://github.com/ome9ax/target-s3-jsonl/compare/1.2.0...1.2.1
 
