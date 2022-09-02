@@ -34,7 +34,6 @@ def _retry_pattern() -> Callable:
         backoff.expo,
         ClientError,
         max_tries=5,
-        # on_backoff=_log_backoff_attempt,  # type: ignore
         on_backoff=_log_backoff_attempt,
         factor=10)
 
@@ -177,23 +176,22 @@ async def put_object(config: Dict[str, Any], file_metadata: Dict, stream_data: L
 #     '''
 #     regex_pattern: Pattern = compile(regex_path)
 
-#     paginator = client.get_paginator('list_objects')
-#     items = paginator.paginate(Bucket=bucket, Prefix=prefix)
-#     for file_path in map(lambda x: x.get('Key', ''), await to_thread(items.search, 'Contents')):
-#         # check files
+#     paginator = client.get_paginator('list_objects_v2')
+#     files_metadata = paginator.paginate(Bucket=bucket, Prefix=prefix)
+#     for file_path in map(lambda x: x.get('Key', ''), await to_thread(files_metadata.search, 'Contents')):
 #         if match(regex_pattern, file_path):
 #             yield file_path
 
 
-# async def copy(
+# async def sync(
 #     client: BaseClient, semaphore: Semaphore, source_bucket: str, source_key: str, target_bucket: str, target_key: str, overwrite: bool = False) -> None:
 #     async with semaphore:
-#         LOGGER.debug(f'S3 Copy - "s3://{source_bucket}/{source_key}" to "s3://{target_bucket}/{target_key}" begins.')
+#         LOGGER.debug(f'S3 Bucket Sync - "s3://{source_bucket}/{source_key}" to "s3://{target_bucket}/{target_key}" begins.')
 #         if not overwrite and 'Contents' in client.list_objects_v2(Bucket=target_bucket, Prefix=target_key, MaxKeys=1):
-#             LOGGER.info(f'S3 Copy - "s3://{target_bucket}/{target_key}" already exists.')
+#             LOGGER.info(f'S3 Bucket Sync - "s3://{target_bucket}/{target_key}" already exists.')
 #         else:
 #             await to_thread(client.copy, {'Bucket': source_bucket, 'Key': source_key}, target_bucket, target_key)
-#             LOGGER.info(f'S3 Copy - "s3://{source_bucket}/{source_key}" to "s3://{target_bucket}/{target_key}" copy completed.')
+#             LOGGER.info(f'S3 Bucket Sync - "s3://{source_bucket}/{source_key}" to "s3://{target_bucket}/{target_key}" copy completed.')
 
 
 @_retry_pattern()
@@ -201,9 +199,6 @@ async def put_object(config: Dict[str, Any], file_metadata: Dict, stream_data: L
 # async def upload_file(config: Dict[str, Any], file_metadata: Dict, file_data: List, client: Any) -> None:
 async def upload_file(config: Dict[str, Any], file_metadata: Dict, client: BaseClient) -> Dict:
     encryption_desc, encryption_args = get_encryption_args(config)
-
-    LOGGER.info("Uploading %s to bucket %s at %s%s",
-                str(file_metadata['absolute_path']), config.get('s3_bucket'), file_metadata['relative_path'], encryption_desc)
 
     async with config['semaphore']:
         # await client.upload_file(
@@ -213,6 +208,11 @@ async def upload_file(config: Dict[str, Any], file_metadata: Dict, client: BaseC
                         file_metadata['relative_path'],
                         **encryption_args)
 
+    LOGGER.info('%s uploaded to bucket %s at %s%s',
+                str(file_metadata['absolute_path']), config.get('s3_bucket'), file_metadata['relative_path'], encryption_desc)
+
+    # NOTE: Remove the local file(s)
+    # file_metadata['absolute_path'].unlink()  # missing_ok=False
     return file_metadata
 
 
@@ -242,7 +242,6 @@ async def upload_files(file_data: Dict, config: Dict[str, Any]) -> None:
         for path in paths:
             # NOTE: Remove the local file(s)
             path['absolute_path'].unlink()  # missing_ok=False
-            LOGGER.info(f"Target Core: file {path['relative_path']} uploaded to {config.get('s3_bucket')}")
 
 
 def config_s3(config_default: Dict[str, Any], datetime_format: Dict[str, str] = {
