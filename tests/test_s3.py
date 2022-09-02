@@ -4,7 +4,6 @@ from copy import deepcopy
 from pathlib import Path
 import json
 import os
-import re
 
 import boto3
 from moto import mock_s3, mock_sts
@@ -41,9 +40,9 @@ def aws_credentials():
 def test_log_backoff_attempt(caplog):
     '''TEST : simple upload_files call'''
 
-    log_backoff_attempt({'tries': 99})
-    pat = r'INFO     root:s3.py:\d{2} Error detected communicating with Amazon, triggering backoff: 99 try\n'
-    assert re.match(pat, caplog.text)
+    log_backoff_attempt({'tries': 2})
+
+    assert 'Error detected communicating with Amazon, triggering backoff: 2 try' in caplog.text
 
 
 @mock_sts

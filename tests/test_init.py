@@ -11,7 +11,6 @@ from moto import mock_s3
 # Package imports
 from target_s3_jsonl import (
     sys,
-    Decimal,
     datetime,
     argparse,
     gzip,
@@ -22,7 +21,6 @@ from target_s3_jsonl import (
     add_metadata_values_to_record,
     remove_metadata_values_from_record,
     emit_state,
-    float_to_decimal,
     get_target_key,
     save_jsonl_file,
     upload_files,
@@ -262,22 +260,6 @@ def test_remove_metadata_values_from_record():
             'c_pk': 1, 'c_varchar': '1', 'c_int': 1, 'c_float': 1.99}
 
 
-def test_float_to_decimal():
-    '''TEST : simple float_to_decimal call'''
-
-    assert float_to_decimal({
-        "type": "RECORD",
-        "stream": "tap_dummy_test-test_table_one",
-        "record": {
-            "c_pk": 1, "c_varchar": "1", "c_int": 1, "c_float": 1.99},
-        "version": 1, "time_extracted": "2019-01-31T15:51:47.465408Z"}) \
-        == {
-            "type": "RECORD", "stream": "tap_dummy_test-test_table_one",
-            "record": {
-                "c_pk": 1, "c_varchar": "1", "c_int": 1, "c_float": Decimal('1.99')},
-            "version": 1, "time_extracted": "2019-01-31T15:51:47.465408Z"}
-
-
 def test_get_target_key(config):
     '''TEST : simple get_target_key call'''
 
@@ -374,6 +356,8 @@ def test_persist_lines(caplog, config, input_data, input_multi_stream_data, inva
 
     dummy_type = '{"type": "DUMMY", "value": {"currently_syncing": "tap_dummy_test-test_table_one"}}'
     output_state, output_file_metadata = persist_lines([dummy_type] + input_multi_stream_data, config)
+
+    assert 'Unknown message type "{}" in message "{}"'.format(json.loads(dummy_type)['type'], dummy_type.replace('"', "'")) in caplog.text
 
     with raises(json.decoder.JSONDecodeError):
         output_state, output_file_metadata = persist_lines(invalid_row_data, config)

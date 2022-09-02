@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-__version__ = '1.2.1'
+__version__ = '1.2.2'
 
 import argparse
 import gzip
@@ -13,7 +13,7 @@ import datetime
 from uuid import uuid4
 
 from jsonschema import Draft4Validator, FormatChecker
-from decimal import Decimal
+from adjust_precision_for_schema import adjust_decimal_precision_for_schema
 
 from target_s3_jsonl import s3
 from target_s3_jsonl.logger import get_logger
@@ -82,18 +82,6 @@ def emit_state(state):
         sys.stdout.flush()
 
 
-def float_to_decimal(value):
-    '''Walk the given data structure and turn all instances of float into
-    double.'''
-    if isinstance(value, float):
-        return Decimal(str(value))
-    if isinstance(value, list):
-        return [float_to_decimal(child) for child in value]
-    if isinstance(value, dict):
-        return {k: float_to_decimal(v) for k, v in value.items()}
-    return value
-
-
 def get_target_key(stream, config, timestamp=None, prefix=None):
     '''Creates and returns an S3 key for the stream'''
 
@@ -149,7 +137,7 @@ def persist_lines(messages, config, save_records=save_jsonl_file):
 
             record_to_load = o['record']
             # NOTE: Validate record
-            validators[stream].validate(float_to_decimal(record_to_load))
+            validators[stream].validate(record_to_load)
 
             if config.get('add_metadata_columns'):
                 record_to_load = add_metadata_values_to_record(o, {}, now)
@@ -170,11 +158,11 @@ def persist_lines(messages, config, save_records=save_jsonl_file):
             if 'stream' not in o:
                 raise Exception("Line is missing required key 'stream': {}".format(message))
             stream = o['stream']
+            schemas[stream] = o['schema']
 
-            if config.get('add_metadata_columns'):
-                schemas[stream] = add_metadata_columns_to_schema(o)
-            else:
-                schemas[stream] = float_to_decimal(o['schema'])
+            schemas[stream] = add_metadata_columns_to_schema(o) if config.get('add_metadata_columns') else o
+
+            adjust_decimal_precision_for_schema(schemas[stream])
 
             # NOTE: prevent exception *** jsonschema.exceptions.UnknownType: Unknown type 'SCHEMA' for validator.
             #       'type' is a key word for jsonschema validator which is different from `{'type': 'SCHEMA'}` as the message type.
