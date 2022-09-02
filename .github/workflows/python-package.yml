@@ -127,7 +127,7 @@ jobs:
         ls -l dist
     - name: Publish distribution package to TestPyPI
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@release/v1
       with:
         verify_metadata: true
         skip_existing: true
@@ -137,7 +137,7 @@ jobs:
 
     - name: Publish distribution package
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@release/v1
       with:
         verify_metadata: true
         skip_existing: true
