@@ -8,6 +8,7 @@ from re import match
 import lzma
 from pathlib import Path
 import datetime
+from typing import Dict
 import boto3
 from botocore.client import BaseClient
 # from botocore.stub import Stubber
@@ -369,6 +370,14 @@ def test_put_object(config):
             client))
 
 
+async def mock_upload_file(config: Dict, file_metadata: Dict, client: BaseClient) -> None:
+
+    await upload_file(
+        config | {'semaphore': Semaphore(99)},
+        file_metadata,
+        client)
+
+
 @mock_s3
 def test_upload_file(config):
     '''TEST : simple upload_file call'''
@@ -377,14 +386,13 @@ def test_upload_file(config):
     conn.create_bucket(Bucket=config['s3_bucket'])
 
     client: BaseClient = create_session(config).client('s3')
-    semaphore = Semaphore(99)
 
     file_metadata = {
         'absolute_path': Path('tests', 'resources', 'messages.json'),
         'relative_path': 'dummy/messages.json'}
 
-    run(upload_file(
-        config | {'semaphore': semaphore},
+    run(mock_upload_file(
+        config,
         file_metadata,
         client))
 
@@ -397,8 +405,8 @@ def test_upload_file(config):
     file_metadata = {
         'absolute_path': Path('tests', 'resources', 'messages.json'),
         'relative_path': 'dummy/messages_kms.json'}
-    run(upload_file(
-        config | {'semaphore': semaphore, 'encryption_type': 'kms', 'encryption_key': None},
+    run(mock_upload_file(
+        config | {'encryption_type': 'kms', 'encryption_key': None},
         file_metadata,
         client))
 
@@ -411,8 +419,8 @@ def test_upload_file(config):
     file_metadata = {
         'absolute_path': Path('tests', 'resources', 'messages.json'),
         'relative_path': 'dummy/messages_kms.json'}
-    run(upload_file(
-        config | {'semaphore': semaphore, 'encryption_type': 'kms', 'encryption_key': 'xXx'},
+    run(mock_upload_file(
+        config | {'encryption_type': 'kms', 'encryption_key': 'xXx'},
         file_metadata,
         client))
 
@@ -423,8 +431,8 @@ def test_upload_file(config):
 
     # NOTE: 'dummy' encryption_type
     with raises(Exception):
-        run(upload_file(
-            config | {'semaphore': semaphore, 'encryption_type': 'dummy'},
+        run(mock_upload_file(
+            config | {'encryption_type': 'dummy'},
             file_metadata | {'relative_path': 'dummy/messages_dummy.json'},
             client))
 
