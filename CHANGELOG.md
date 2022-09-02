@@ -1,8 +1,17 @@
 # Change Log
-## [1.2.1](https://github.com/ome9ax/target-s3-jsonl/tree/1.2.1) (2022-07-13)
+
+## [1.2.2](https://github.com/ome9ax/target-s3-jsonl/tree/1.2.2) (2022-09-01)
+
+### What's Changed
+* #69 decimal.DivisionImpossible raised when handling schema items with high levels of precision by @ome9ax in #75
+
+**Full Changelog**: https://github.com/ome9ax/target-s3-jsonl/compare/1.2.1...1.2.2
 
 ### What's Changed
 * Added optional config parameter `role_arn`, which allows assuming additional roles.
+
+**Full Changelog**: https://github.com/ome9ax/target-s3-jsonl/compare/1.2.0...1.2.1
+
 ## [1.2.0](https://github.com/ome9ax/target-s3-jsonl/tree/1.2.0) (2022-04-11)
 
 ### What's Changed
