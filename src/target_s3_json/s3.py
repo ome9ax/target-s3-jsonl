@@ -197,7 +197,7 @@ async def put_object(config: Dict[str, Any], file_metadata: Dict, stream_data: L
 @_retry_pattern()
 # def write(config: Dict[str, Any], file_meta: Dict, file_data: List) -> None:
 # async def upload_file(config: Dict[str, Any], file_metadata: Dict, file_data: List, client: Any) -> None:
-async def upload_file(config: Dict[str, Any], file_metadata: Dict, client: BaseClient) -> Dict:
+async def upload_file(config: Dict[str, Any], file_metadata: Dict, client: BaseClient, remove_file: bool = False) -> Dict:
     encryption_desc, encryption_args = get_encryption_args(config)
 
     async with config['semaphore']:
@@ -211,8 +211,9 @@ async def upload_file(config: Dict[str, Any], file_metadata: Dict, client: BaseC
     LOGGER.info('%s uploaded to bucket %s at %s%s',
                 str(file_metadata['absolute_path']), config.get('s3_bucket'), file_metadata['relative_path'], encryption_desc)
 
-    # NOTE: Remove the local file(s)
-    # file_metadata['absolute_path'].unlink()  # missing_ok=False
+    if remove_file:
+        # NOTE: Remove the local file(s)
+        file_metadata['absolute_path'].unlink()  # missing_ok=False
     return file_metadata
 
 
@@ -233,15 +234,11 @@ async def upload_files(file_data: Dict, config: Dict[str, Any]) -> None:
         #             path['absolute_path'].unlink()  # missing_ok=False
 
         semaphore = Semaphore(config['concurrency_max'])
-        paths: List = await gather(*[
-            shield(upload_file(config | {'semaphore': semaphore}, path, client))
+        await gather(*[
+            shield(upload_file(config | {'semaphore': semaphore}, path, client, remove_file=True))
             for stream, file_metadata in file_data.items()
             for path in file_metadata['path'].values()
             if path['absolute_path'].exists()])
-
-        for path in paths:
-            # NOTE: Remove the local file(s)
-            path['absolute_path'].unlink()  # missing_ok=False
 
 
 def config_s3(config_default: Dict[str, Any], datetime_format: Dict[str, str] = {
