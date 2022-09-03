@@ -184,7 +184,10 @@ async def put_object(config: Dict[str, Any], file_metadata: Dict, stream_data: L
 
 
 # async def sync(
+#     start_date: datetime = eval(config.get('date_time', 'datetime.now().astimezone(timezone.utc)'))
 #     client: BaseClient, semaphore: Semaphore, source_bucket: str, source_key: str, target_bucket: str, target_key: str, overwrite: bool = False) -> None:
+#     await gather(*[shield(search(client, semaphore, source_bucket, source_key, target_bucket, target_root + source_key.removeprefix(source_root), overwrite))
+#         async for source_key in search(client, source_bucket, source_root, source_regexp)])
 #     async with semaphore:
 #         LOGGER.debug(f'S3 Bucket Sync - "s3://{source_bucket}/{source_key}" to "s3://{target_bucket}/{target_key}" begins.')
 #         if not overwrite and 'Contents' in client.list_objects_v2(Bucket=target_bucket, Prefix=target_key, MaxKeys=1):
@@ -222,17 +225,8 @@ async def upload_files(file_data: Dict, config: Dict[str, Any]) -> None:
         #                                                          if config.get('aws_endpoint_url') else {})) as client:
         client: BaseClient = create_session(config).client('s3', **({'endpoint_url': config.get('aws_endpoint_url')}
                                                            if config.get('aws_endpoint_url') else {}))
-        # for stream, file_metadata in file_data.items():
-        #     for path in file_metadata['path'].values():
-        #         if path['absolute_path'].exists():
-        #             await upload_file(config, path, client)
-        #             # run(upload_file(config, path, client))
-        #             LOGGER.info("Target Core: {} file {} uploaded to {}".format(stream, path['relative_path'], config.get('s3_bucket')))
-
-        #             # NOTE: Remove the local file(s)
-        #             path['absolute_path'].unlink()  # missing_ok=False
-
         semaphore = Semaphore(config['concurrency_max'])
+
         await gather(*[
             shield(upload_file(config | {'semaphore': semaphore}, path, client, remove_file=True))
             for stream, file_metadata in file_data.items()
