@@ -197,7 +197,7 @@ async def put_object(config: Dict[str, Any], file_metadata: Dict, stream_data: L
 @_retry_pattern()
 # def write(config: Dict[str, Any], file_meta: Dict, file_data: List) -> None:
 # async def upload_file(config: Dict[str, Any], file_metadata: Dict, file_data: List, client: Any) -> None:
-async def upload_file(config: Dict[str, Any], file_metadata: Dict, client: BaseClient, remove_file: bool = False) -> Dict:
+async def upload_file(config: Dict[str, Any], file_metadata: Dict, client: BaseClient, remove_file: bool = False) -> None:
     encryption_desc, encryption_args = get_encryption_args(config)
 
     async with config['semaphore']:
@@ -214,7 +214,6 @@ async def upload_file(config: Dict[str, Any], file_metadata: Dict, client: BaseC
     if remove_file:
         # NOTE: Remove the local file(s)
         file_metadata['absolute_path'].unlink()  # missing_ok=False
-    return file_metadata
 
 
 async def upload_files(file_data: Dict, config: Dict[str, Any]) -> None:
