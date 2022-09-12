@@ -6,7 +6,7 @@ setup(
     install_requires=[
         'adjust-precision-for-schema',
         'jsonschema==4.14.0',
-        'boto3==1.24.62',
+        'boto3==1.24.71',
         'backoff==2.1.2'
     ]
 )
