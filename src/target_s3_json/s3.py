@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from functools import partial
 from os import environ
 from pathlib import Path
 import sys
@@ -9,7 +10,7 @@ import gzip
 import lzma
 import backoff
 from typing import Callable, Dict, Any, List, TextIO  # , Generator
-from asyncio import Semaphore, gather, shield, to_thread, run
+from asyncio import to_thread  # , gather, shield, Semaphore
 
 from boto3.session import Session
 from botocore.exceptions import ClientError
@@ -19,7 +20,7 @@ from botocore.client import BaseClient
 
 from target.stream import Loader
 from target import file
-from target.file import config_file
+from target.file import config_file, save_json
 
 from target._logger import get_logger
 LOGGER = get_logger()
@@ -189,9 +190,8 @@ async def put_object(config: Dict[str, Any], file_metadata: Dict, stream_data: L
 #     await gather(*[shield(search(client, semaphore, source_bucket, source_key, target_bucket, target_root + source_key.removeprefix(source_root), overwrite))
 #         async for source_key in search(client, source_bucket, source_root, source_regexp)])
 #     async with semaphore:
-#         LOGGER.debug(f'S3 Bucket Sync - "s3://{source_bucket}/{source_key}" to "s3://{target_bucket}/{target_key}" begins.')
 #         if not overwrite and 'Contents' in client.list_objects_v2(Bucket=target_bucket, Prefix=target_key, MaxKeys=1):
-#             LOGGER.info(f'S3 Bucket Sync - "s3://{target_bucket}/{target_key}" already exists.')
+#             LOGGER.debug(f'S3 Bucket Sync - "s3://{target_bucket}/{target_key}" already exists.')
 #         else:
 #             await to_thread(client.copy, {'Bucket': source_bucket, 'Key': source_key}, target_bucket, target_key)
 #             LOGGER.info(f'S3 Bucket Sync - "s3://{source_bucket}/{source_key}" to "s3://{target_bucket}/{target_key}" copy completed.')
@@ -200,38 +200,24 @@ async def put_object(config: Dict[str, Any], file_metadata: Dict, stream_data: L
 @_retry_pattern()
 # def write(config: Dict[str, Any], file_meta: Dict, file_data: List) -> None:
 # async def upload_file(config: Dict[str, Any], file_metadata: Dict, file_data: List, client: Any) -> None:
-async def upload_file(config: Dict[str, Any], file_metadata: Dict, client: BaseClient, remove_file: bool = False) -> None:
-    encryption_desc, encryption_args = get_encryption_args(config)
+async def upload_file(config: Dict[str, Any], file_metadata: Dict) -> None:
+    if not config.get('local', False) and (file_metadata['absolute_path'].stat().st_size if file_metadata['absolute_path'].exists() else 0) > 0:
+        encryption_desc, encryption_args = get_encryption_args(config)
 
-    async with config['semaphore']:
+        # async with config['semaphore']:
         # await client.upload_file(
-        await to_thread(client.upload_file,
+        await to_thread(config['client'].upload_file,
                         str(file_metadata['absolute_path']),
                         config.get('s3_bucket'),
                         file_metadata['relative_path'],
                         **encryption_args)
 
-    LOGGER.info('%s uploaded to bucket %s at %s%s',
-                str(file_metadata['absolute_path']), config.get('s3_bucket'), file_metadata['relative_path'], encryption_desc)
+        LOGGER.info('%s uploaded to bucket %s at %s%s',
+                    str(file_metadata['absolute_path']), config.get('s3_bucket'), file_metadata['relative_path'], encryption_desc)
 
-    if remove_file:
-        # NOTE: Remove the local file(s)
-        file_metadata['absolute_path'].unlink()  # missing_ok=False
-
-
-async def upload_files(file_data: Dict, config: Dict[str, Any]) -> None:
-    if not config.get('local', False):
-        # async with create_session(config).create_client('s3', **({'endpoint_url': config.get('aws_endpoint_url')}
-        #                                                          if config.get('aws_endpoint_url') else {})) as client:
-        client: BaseClient = create_session(config).client('s3', **({'endpoint_url': config.get('aws_endpoint_url')}
-                                                           if config.get('aws_endpoint_url') else {}))
-        semaphore = Semaphore(config['concurrency_max'])
-
-        await gather(*[
-            shield(upload_file(config | {'semaphore': semaphore}, path, client, remove_file=True))
-            for stream, file_metadata in file_data.items()
-            for path in file_metadata['path'].values()
-            if path['absolute_path'].exists()])
+        if config.get('remove_file', True):
+            # NOTE: Remove the local file(s)
+            file_metadata['absolute_path'].unlink()  # missing_ok=False
 
 
 def config_s3(config_default: Dict[str, Any], datetime_format: Dict[str, str] = {
@@ -268,11 +254,11 @@ def main(loader: type[Loader] = Loader, lines: TextIO = sys.stdin) -> None:
     parser.add_argument('-c', '--config', help='Config file', required=True)
     args = parser.parse_args()
     config = file.config_compression(config_file(config_s3(json.loads(Path(args.config).read_text(encoding='utf-8')))))
+    save_s3: Callable = partial(save_json, post_processing=upload_file)
+    client: BaseClient = create_session(config).client('s3', **({'endpoint_url': config.get('aws_endpoint_url')}
+                                                       if config.get('aws_endpoint_url') else {}))
 
-    s3_loader: Loader = loader(config)
-    s3_loader.run(lines)
-
-    run(upload_files(s3_loader.stream_data, s3_loader.config))
+    loader(config | {'client': client}, writeline=save_s3).run(lines)
 
 
 # def write(config: Dict[str, Any], file_meta: Dict, file_data: List) -> None:

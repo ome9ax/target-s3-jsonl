@@ -1,6 +1,7 @@
+from io import BufferedReader, TextIOWrapper
 import sys
 import datetime
-from datetime import datetime as dt, timezone
+from datetime import datetime as dt, timezone, tzinfo
 from pathlib import Path
 import argparse
 import json
@@ -23,10 +24,10 @@ def patch_datetime(monkeypatch):
 
     class mydatetime(dt):
         @classmethod
-        def now(cls, x=None, tz=None):
+        def now(cls, tz: tzinfo = None):
             # NOTE: timestamp dt.fromtimestamp(1628663978.321056, tz=timezone.utc)
             d: dt = dt.strptime('2022-04-29 07:39:38.321056+01:00', '%Y-%m-%d %H:%M:%S.%f%z')
-            return d.astimezone(x) if x else d
+            return d.astimezone(tz) if tz else d
 
         @classmethod
         def utcnow(cls):
@@ -135,6 +136,15 @@ def patch_argument_parser(monkeypatch, temp_path, config_raw):
 
 
 @fixture  # (scope='module')
-def patch_sys_stdin(monkeypatch, input_multi_stream_data):
+def patch_sys_stdin(monkeypatch):
 
-    monkeypatch.setattr(sys, 'stdin', input_multi_stream_data)
+    # Get a file-like object in binary mode
+    input_file = Path('tests', 'resources', 'messages-with-three-streams.json').open('rb')
+    # Wrap it in a buffered reader with a 4096 byte buffer
+    # This can also be used to read later from the buffer independently without consuming the IOReader
+    buffered = BufferedReader(input_file, buffer_size=4096)
+    # Could then first_bytes = buffered.peek(2048)
+    # Wrap the buffered reader in a text io wrapper that can decode to unicode
+    decoded = TextIOWrapper(buffered, encoding='utf-8')
+
+    monkeypatch.setattr(sys, 'stdin', decoded)

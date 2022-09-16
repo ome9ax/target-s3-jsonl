@@ -2,13 +2,12 @@
 # Standard library imports
 import sys
 from os import environ
-from asyncio import Semaphore, run
+from asyncio import run
 from copy import deepcopy
 from re import match
 import lzma
 from pathlib import Path
 import datetime
-from typing import Dict
 import boto3
 from botocore.client import BaseClient
 # from botocore.stub import Stubber
@@ -25,12 +24,12 @@ from pytest import fixture, raises, mark
 from moto import mock_s3, mock_sts
 
 # Package imports
-from target.file import save_json
+# from target.file import save_json
 from target_s3_json.s3 import (
-    _log_backoff_attempt, config_compression, create_session, get_encryption_args, put_object, upload_file, upload_files, config_s3, main
+    _log_backoff_attempt, config_compression, create_session, get_encryption_args, put_object, upload_file, config_s3, main
 )
 
-from .conftest import clear_dir
+# from .conftest import clear_dir
 
 # import shutil
 # import signal
@@ -370,16 +369,8 @@ def test_put_object(config):
             client))
 
 
-async def mock_upload_file(config: Dict, file_metadata: Dict, client: BaseClient) -> None:
-
-    await upload_file(
-        config | {'semaphore': Semaphore(99)},
-        file_metadata,
-        client)
-
-
 @mock_s3
-def test_upload_file(config):
+def test_upload_file(config, temp_path):
     '''TEST : simple upload_file call'''
 
     conn = boto3.resource('s3', region_name='us-east-1')
@@ -387,14 +378,23 @@ def test_upload_file(config):
 
     client: BaseClient = create_session(config).client('s3')
 
+    temp_file: Path = Path(temp_path.join('test.json.gz'))
+    temp_file.write_bytes(Path('tests', 'resources', 'messages.json').read_bytes())
+
     file_metadata = {
-        'absolute_path': Path('tests', 'resources', 'messages.json'),
+        'absolute_path': temp_file,
         'relative_path': 'dummy/messages.json'}
 
-    run(mock_upload_file(
-        config,
-        file_metadata,
-        client))
+    run(upload_file(
+        config | {'local': True, 'client': client, 'remove_file': False},
+        file_metadata))
+
+    assert 'Contents' not in client.list_objects_v2(Bucket=config['s3_bucket'], Prefix=file_metadata['relative_path'], MaxKeys=1)
+    assert file_metadata['absolute_path'].exists()
+
+    run(upload_file(
+        config | {'client': client, 'remove_file': False},
+        file_metadata))
 
     head = client.head_object(Bucket=config.get('s3_bucket'), Key=file_metadata['relative_path'])
     assert head['ResponseMetadata']['HTTPStatusCode'] == 200
@@ -403,12 +403,11 @@ def test_upload_file(config):
 
     # NOTE: 'kms' encryption_type with default encryption_key
     file_metadata = {
-        'absolute_path': Path('tests', 'resources', 'messages.json'),
+        'absolute_path': temp_file,
         'relative_path': 'dummy/messages_kms.json'}
-    run(mock_upload_file(
-        config | {'encryption_type': 'kms', 'encryption_key': None},
-        file_metadata,
-        client))
+    run(upload_file(
+        config | {'client': client, 'remove_file': False, 'encryption_type': 'kms', 'encryption_key': None},
+        file_metadata))
 
     head = client.head_object(Bucket=config.get('s3_bucket'), Key=file_metadata['relative_path'])
     assert head['ResponseMetadata']['HTTPStatusCode'] == 200
@@ -417,49 +416,24 @@ def test_upload_file(config):
 
     # NOTE: 'kms' encryption_type with encryption_key
     file_metadata = {
-        'absolute_path': Path('tests', 'resources', 'messages.json'),
+        'absolute_path': temp_file,
         'relative_path': 'dummy/messages_kms.json'}
-    run(mock_upload_file(
-        config | {'encryption_type': 'kms', 'encryption_key': 'xXx'},
-        file_metadata,
-        client))
+    run(upload_file(
+        config | {'client': client, 'encryption_type': 'kms', 'encryption_key': 'xXx'},
+        file_metadata))
 
     head = client.head_object(Bucket=config.get('s3_bucket'), Key=file_metadata['relative_path'])
     assert head['ResponseMetadata']['HTTPStatusCode'] == 200
     assert head['ContentLength'] == 613
     assert head['ResponseMetadata']['RetryAttempts'] == 0
 
+    assert not file_metadata['absolute_path'].exists()
+
     # NOTE: 'dummy' encryption_type
-    with raises(Exception):
-        run(mock_upload_file(
-            config | {'encryption_type': 'dummy'},
-            file_metadata | {'relative_path': 'dummy/messages_dummy.json'},
-            client))
-
-
-@mock_s3
-def test_upload_files(config, file_metadata):
-    '''TEST : simple upload_files call'''
-
-    config['work_path'].mkdir(parents=True, exist_ok=True)
-    for stream in file_metadata:
-        run(save_json(stream, file_metadata,
-            config | {'open_func': open, 'path_template': '{stream}-{date_time}_part_{part:0>3}.json'}))
-
-    conn = boto3.resource('s3', region_name='us-east-1')
-    conn.create_bucket(Bucket=config['s3_bucket'])
-
-    run(upload_files(file_metadata, config))
-
-    for path in file_metadata['tap_dummy_test-test_table_three']['path'].values():
-        assert not path['absolute_path'].exists()
-
-    clear_dir(config['work_path'])
-
-    config['local'] = True
-    run(upload_files(file_metadata, config))
-    for path in file_metadata['tap_dummy_test-test_table_three']['path'].values():
-        assert not path['absolute_path'].exists()
+    # with raises(Exception):
+    #     run(upload_file(
+    #         config | {'client': client, 'encryption_type': 'dummy'},
+    #         file_metadata | {'relative_path': 'dummy/messages_dummy.json'}))
 
 
 def test_config_s3(config_raw):
