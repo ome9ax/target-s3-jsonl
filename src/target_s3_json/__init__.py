@@ -2,13 +2,13 @@
 
 __version__ = '2.0.0'
 
-from pathlib import Path
+# from pathlib import Path
 
 # Package imports
-from target._logger import get_logger
+# from target._logger import get_logger
 from .s3 import main
 
-LOGGER = get_logger(Path(__file__).with_name('logging.conf'))
+# LOGGER = get_logger(Path(__file__).with_name('logging.conf'))
 
 CONFIG_PARAMS = {
     'local',
@@ -24,5 +24,5 @@ CONFIG_PARAMS = {
 }
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == '__main__':
     main()

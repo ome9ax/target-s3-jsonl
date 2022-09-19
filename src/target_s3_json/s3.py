@@ -248,7 +248,7 @@ def config_s3(config_default: Dict[str, Any], datetime_format: Dict[str, str] = 
     return config_default
 
 
-def main(loader: type[Loader] = Loader, lines: TextIO = sys.stdin) -> None:
+def main(lines: TextIO = sys.stdin) -> None:
     '''Main'''
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', help='Config file', required=True)
@@ -258,7 +258,7 @@ def main(loader: type[Loader] = Loader, lines: TextIO = sys.stdin) -> None:
     client: BaseClient = create_session(config).client('s3', **({'endpoint_url': config.get('aws_endpoint_url')}
                                                        if config.get('aws_endpoint_url') else {}))
 
-    loader(config | {'client': client}, writeline=save_s3).run(lines)
+    Loader(config | {'client': client}, writeline=save_s3).run(lines)
 
 
 # def write(config: Dict[str, Any], file_meta: Dict, file_data: List) -> None:
