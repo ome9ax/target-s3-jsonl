@@ -198,8 +198,6 @@ async def put_object(config: Dict[str, Any], file_metadata: Dict, stream_data: L
 
 
 @_retry_pattern()
-# def write(config: Dict[str, Any], file_meta: Dict, file_data: List) -> None:
-# async def upload_file(config: Dict[str, Any], file_metadata: Dict, file_data: List, client: Any) -> None:
 async def upload_file(config: Dict[str, Any], file_metadata: Dict) -> None:
     if not config.get('local', False) and (file_metadata['absolute_path'].stat().st_size if file_metadata['absolute_path'].exists() else 0) > 0:
         encryption_desc, encryption_args = get_encryption_args(config)
@@ -237,9 +235,6 @@ def config_s3(config_default: Dict[str, Any], datetime_format: Dict[str, str] = 
             .replace('{timestamp:', '{date_time:').replace('{date:', '{date_time:') \
             .replace('{timestamp}', '{date_time%s}' % datetime_format['date_time_format']) \
             .replace('{date}', '{date_time%s}' % datetime_format['date_format'])
-
-    if 'concurrency_max' not in config_default:
-        config_default['concurrency_max'] = 1000
 
     missing_params = {'s3_bucket'} - set(config_default.keys())
     if missing_params:

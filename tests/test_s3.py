@@ -145,7 +145,6 @@ def config(patch_datetime, config_raw):
         # 'date_time': dt.strptime('2021-08-11 06:39:38.321056+00:00', '%Y-%m-%d %H:%M:%S.%f%z'),
         'date_time': datetime.datetime.utcnow(),
         'work_path': Path(config_raw['work_dir']),
-        'concurrency_max': 1000,
         'open_func': open
     }
 
@@ -441,19 +440,19 @@ def test_config_s3(config_raw):
     config = deepcopy(config_raw)
     config['temp_dir'] = config.pop('work_dir')
     config['naming_convention'] = config.pop('path_template')
-    assert config_s3(config) == config_raw | {'concurrency_max': 1000}
+    assert config_s3(config) == config_raw
 
     config = deepcopy(config_raw)
     config['temp_dir'] = config.pop('work_dir')
     config.pop('path_template')
     config['naming_convention'] = '{stream}-{timestamp}.json'
-    assert config_s3(config) == config_raw | {'concurrency_max': 1000, 'path_template': '{stream}-{date_time:%Y%m%dT%H%M%S}.json'}
+    assert config_s3(config) == config_raw | {'path_template': '{stream}-{date_time:%Y%m%dT%H%M%S}.json'}
 
     config = deepcopy(config_raw)
     config['temp_dir'] = config.pop('work_dir')
     config.pop('path_template')
     config['naming_convention'] = '{stream}-{date}.json'
-    assert config_s3(config) == config_raw | {'concurrency_max': 1000, 'path_template': '{stream}-{date_time:%Y%m%d}.json'}
+    assert config_s3(config) == config_raw | {'path_template': '{stream}-{date_time:%Y%m%d}.json'}
 
     config.pop('s3_bucket')
     with raises(Exception):
