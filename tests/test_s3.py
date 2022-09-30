@@ -1,4 +1,4 @@
-'''Tests for the target.s3 module'''
+'''Tests for the target_s3_json.s3 module'''
 # Standard library imports
 import sys
 from os import environ
@@ -377,7 +377,7 @@ def test_upload_file(config, temp_path):
 
     client: BaseClient = create_session(config).client('s3')
 
-    temp_file: Path = Path(temp_path.join('test.json.gz'))
+    temp_file: Path = Path(temp_path.join('temp_file.json'))
     temp_file.write_bytes(Path('tests', 'resources', 'messages.json').read_bytes())
 
     file_metadata = {

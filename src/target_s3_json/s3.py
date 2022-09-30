@@ -1,22 +1,18 @@
-#!/usr/bin/env python3
 from functools import partial
 from os import environ
 from pathlib import Path
 import sys
-# from re import Pattern, compile, match
 import argparse
 import json
 import gzip
 import lzma
 import backoff
-from typing import Callable, Dict, Any, List, TextIO  # , Generator
-from asyncio import to_thread  # , gather, shield, Semaphore
+from typing import Callable, Dict, Any, List, TextIO
+from asyncio import to_thread
 
 from boto3.session import Session
 from botocore.exceptions import ClientError
 from botocore.client import BaseClient
-# from aiobotocore.session import get_session
-# from s3fs import S3FileSystem
 
 from target.stream import Loader
 from target import file
@@ -68,7 +64,7 @@ def config_compression(config_default: Dict) -> Dict:
 def create_session(config: Dict) -> Session:
     LOGGER.debug('Attempting to create AWS session')
 
-    # Get the required parameters from config file and/or environment variables
+    # NOTE: Get the required parameters from config file and/or environment variables
     aws_access_key_id = config.get('aws_access_key_id') or environ.get('AWS_ACCESS_KEY_ID')
     aws_secret_access_key = config.get('aws_secret_access_key') or environ.get('AWS_SECRET_ACCESS_KEY')
     aws_session_token = config.get('aws_session_token') or environ.get('AWS_SESSION_TOKEN')
@@ -78,19 +74,17 @@ def create_session(config: Dict) -> Session:
 
     endpoint_params = {'endpoint_url': aws_endpoint_url} if aws_endpoint_url else {}
 
-    # AWS credentials based authentication
+    # NOTE: AWS credentials based authentication
     if aws_access_key_id and aws_secret_access_key:
-        # aws_session = get_session(
         aws_session: Session = Session(
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
             aws_session_token=aws_session_token)
-    # AWS Profile based authentication
+    # NOTE: AWS Profile based authentication
     else:
-        # aws_session = get_session()
         aws_session = Session(profile_name=aws_profile)
 
-    # AWS credentials based authentication assuming specific IAM role
+    # NOTE: AWS credentials based authentication assuming specific IAM role
     if role_arn:
         role_name = role_arn.split('/', 1)[1]
         sts: BaseClient = aws_session.client('sts', **endpoint_params)
@@ -108,7 +102,7 @@ def create_session(config: Dict) -> Session:
 
 def get_encryption_args(config: Dict[str, Any]) -> tuple:
     if config.get('encryption_type', 'none').lower() == "none":
-        # No encryption config (defaults to settings on the bucket):
+        # NOTE: No encryption config (defaults to settings on the bucket):
         encryption_desc = ''
         encryption_args = {}
     elif config.get('encryption_type', 'none').lower() == 'kms':
@@ -127,74 +121,18 @@ def get_encryption_args(config: Dict[str, Any]) -> tuple:
 
 
 @_retry_pattern()
-# def write(config: Dict[str, Any], file_meta: Dict, file_data: List) -> None:
-# async def upload_file(config: Dict[str, Any], file_metadata: Dict, file_data: List, client: Any) -> None:
 async def put_object(config: Dict[str, Any], file_metadata: Dict, stream_data: List, client: BaseClient) -> None:
     encryption_desc, encryption_args = get_encryption_args(config)
 
     LOGGER.info("Uploading %s to bucket %s at %s%s",
                 str(file_metadata['absolute_path']), config.get('s3_bucket'), file_metadata['relative_path'], encryption_desc)
 
-    # with config['open_func'](file_metadata['absolute_path'], 'at', encoding='utf-8') as output_file:
-    # await client.put_object(
     await to_thread(client.put_object,
-                    Body=config['open_func'](  # NOTE: gzip.compress, lzma.compress
+                    Body=config['open_func'](  # NOTE: stream compression with gzip.compress, lzma.compress
                         b''.join(json.dumps(record, ensure_ascii=False).encode('utf-8') + b'\n' for record in stream_data)),
                     Bucket=config.get('s3_bucket'),
                     Key=file_metadata['relative_path'],
                     **encryption_args.get('ExtraArgs', {}))
-
-    # resp = await client.get_object_acl(Bucket=config.get('s3_bucket'), Key=file_metadata['relative_path'])
-    # print(resp)
-    # LOGGER.debug("S3 Upload %s uploaded to %s at %s%s",
-    #             str(file_metadata['absolute_path']), config.get('s3_bucket'), file_metadata['relative_path'], encryption_desc)
-
-#     with BytesIO(output_data, 'wb') as output_file:
-#         with config['open_func'](output_file, 'at', encoding='utf-8') as input_data:
-#             input_data.writelines((json.dumps(record) + '\n' for record in stream_data))
-
-#     with BytesIO(b''.join(json.dumps(record, ensure_ascii=False).encode('utf-8') + b'\n' for record in file_data), 'wb') as output_file:
-#     # with BytesIO((b'' + json.dumps(record, ensure_ascii=False).encode('utf-8') + b'\n' for record in file_data), 'wb') as output_file:
-#         with config['open_func'](output_file, 'at', encoding='utf-8') as output_data:
-
-#             await client.put_object(
-#                 Bucket=config.get('s3_bucket'),
-#                 Key=file_metadata['relative_path'],
-#                 Body=output_data,
-#                 ExtraArgs=encryption_args)
-
-#             # await client.upload_file(
-#             #     str(file_metadata['absolute_path']),
-#             #     config.get('s3_bucket'),
-#             #     file_metadata['relative_path'],
-#             #     ExtraArgs=encryption_args)
-
-
-# # NOTE: https://github.com/aws/aws-cli/issues/3784
-# async def search(client: BaseClient, bucket: str, prefix: str, regex_path: str) -> Generator:
-#     '''
-#     perform a flat listing of the files within a bucket
-#     '''
-#     regex_pattern: Pattern = compile(regex_path)
-
-#     paginator = client.get_paginator('list_objects_v2')
-#     files_metadata = paginator.paginate(Bucket=bucket, Prefix=prefix)
-#     for file_path in map(lambda x: x.get('Key', ''), await to_thread(files_metadata.search, 'Contents')):
-#         if match(regex_pattern, file_path):
-#             yield file_path
-
-
-# async def sync(
-#     start_date: datetime = eval(config.get('date_time', 'datetime.now().astimezone(timezone.utc)'))
-#     client: BaseClient, semaphore: Semaphore, source_bucket: str, source_key: str, target_bucket: str, target_key: str, overwrite: bool = False) -> None:
-#     await gather(*[shield(search(client, semaphore, source_bucket, source_key, target_bucket, target_root + source_key.removeprefix(source_root), overwrite))
-#         async for source_key in search(client, source_bucket, source_root, source_regexp)])
-#     async with semaphore:
-#         if not overwrite and 'Contents' in client.list_objects_v2(Bucket=target_bucket, Prefix=target_key, MaxKeys=1):
-#             LOGGER.debug(f'S3 Bucket Sync - "s3://{target_bucket}/{target_key}" already exists.')
-#         else:
-#             await to_thread(client.copy, {'Bucket': source_bucket, 'Key': source_key}, target_bucket, target_key)
-#             LOGGER.info(f'S3 Bucket Sync - "s3://{source_bucket}/{source_key}" to "s3://{target_bucket}/{target_key}" copy completed.')
 
 
 @_retry_pattern()
@@ -202,8 +140,6 @@ async def upload_file(config: Dict[str, Any], file_metadata: Dict) -> None:
     if not config.get('local', False) and (file_metadata['absolute_path'].stat().st_size if file_metadata['absolute_path'].exists() else 0) > 0:
         encryption_desc, encryption_args = get_encryption_args(config)
 
-        # async with config['semaphore']:
-        # await client.upload_file(
         await to_thread(config['client'].upload_file,
                         str(file_metadata['absolute_path']),
                         config.get('s3_bucket'),
@@ -256,15 +192,6 @@ def main(lines: TextIO = sys.stdin) -> None:
     Loader(config | {'client': client}, writeline=save_s3).run(lines)
 
 
-# def write(config: Dict[str, Any], file_meta: Dict, file_data: List) -> None:
-#     s3_fs: S3FileSystem = S3FileSystem(anon=False, s3_additional_kwargs={'ACL': 'bucket-owner-full-control'}, asynchronous=False)
-#     # s3_fs.set_session()
-
-#     with s3_fs.open(file_meta['absolute_path'], 'wb') as output_file:
-#         with config['open_func'](output_file, 'at', encoding='utf-8') as output_data:
-#             output_file.writelines((json.dumps(record) + '\n' for record in file_data))
-
-
 # from io import BytesIO
 # from pyarrow import parquet
 # from pyarrow.json import read_json
@@ -277,3 +204,30 @@ def main(lines: TextIO = sys.stdin) -> None:
 #     # NOTE: Synchronous Alternative without df middle step, read_json not yet as efficient as pandas. Worth keeping on check.
 #     with BytesIO(b''.join(json.dumps(record, ensure_ascii=False).encode('utf-8') + b'\n' for record in file_data)) as data:
 #         parquet.write_table(read_json(data), file_meta['relative_path'], filesystem=s3_fs)
+
+
+# NOTE: https://github.com/aws/aws-cli/issues/3784
+# async def search(client: BaseClient, bucket: str, prefix: str, regex_path: str) -> Generator:
+#     '''
+#     perform a flat listing of the files within a bucket
+#     '''
+#     regex_pattern: Pattern = compile(regex_path)
+
+#     paginator = client.get_paginator('list_objects_v2')
+#     files_metadata = paginator.paginate(Bucket=bucket, Prefix=prefix)
+#     for file_path in map(lambda x: x.get('Key', ''), await to_thread(files_metadata.search, 'Contents')):
+#         if match(regex_pattern, file_path):
+#             yield file_path
+
+
+# async def sync(
+#     start_date: datetime = eval(config.get('date_time', 'datetime.now().astimezone(timezone.utc)'))
+#     client: BaseClient, semaphore: Semaphore, source_bucket: str, source_key: str, target_bucket: str, target_key: str, overwrite: bool = False) -> None:
+#     await gather(*[shield(search(client, semaphore, source_bucket, source_key, target_bucket, target_root + source_key.removeprefix(source_root), overwrite))
+#         async for source_key in search(client, source_bucket, source_root, source_regexp)])
+#     async with semaphore:
+#         if not overwrite and 'Contents' in client.list_objects_v2(Bucket=target_bucket, Prefix=target_key, MaxKeys=1):
+#             LOGGER.debug(f'S3 Bucket Sync - "s3://{target_bucket}/{target_key}" already exists.')
+#         else:
+#             await to_thread(client.copy, {'Bucket': source_bucket, 'Key': source_key}, target_bucket, target_key)
+#             LOGGER.info(f'S3 Bucket Sync - "s3://{source_bucket}/{source_key}" to "s3://{target_bucket}/{target_key}" copy completed.')

@@ -8,10 +8,6 @@ import json
 
 from pytest import fixture
 
-# NOTE: https://docs.aiohttp.org/en/stable/testing.html
-#       https://www.travisluong.com/how-to-test-an-api-with-pytest-and-requests/
-# pytest_plugins = ['aiohttp.pytest_plugin']
-
 
 def clear_dir(dir_path):
     for path in dir_path.iterdir():
