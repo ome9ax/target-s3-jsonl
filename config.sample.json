@@ -1,9 +1,0 @@
-{
-    "aws_access_key_id": "ACCESS-KEY",
-    "aws_secret_access_key": "SECRET",
-    "s3_bucket": "BUCKET",
-    "s3_key_prefix": "SOME-PREFIX/",
-    "compression": "gzip",
-    "naming_convention": "{stream}-{timestamp}.jsonl",
-    "role_arn": "arn:aws:iam::000000000000:role/my_custom_role"
-}

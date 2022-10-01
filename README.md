@@ -14,6 +14,8 @@ following the [Singer spec](https://github.com/singer-io/getting-started/blob/ma
 
 `target-s3-jsonl` is a [Singer](https://singer.io) Target which intend to work with regular [Singer](https://singer.io) Tap. It take the output of the tap and export it as a [JSON Lines](http://jsonlines.org/) files into an AWS S3 bucket.
 
+This package is built over the [`target-core`](https://gitlab.com/singer-core/target-core).
+
 ## Install
 
 First, make sure Python 3 is installed on your system or follow these
@@ -35,21 +37,21 @@ pip install target-s3-jsonl
 python -m venv venv
 . venv/bin/activate
 pip install --upgrade pip
-pip install --upgrade https://github.com/ome9ax/target-s3-jsonl/archive/main.tar.gz
+pip install --upgrade git+https://github.com/ome9ax/target-s3-jsonl.git@main
 ```
 
 ### Isolated virtual environment
 ```bash
 python -m venv ~/.virtualenvs/target-s3-jsonl
-source ~/.virtualenvs/target-s3-jsonl/bin/activate
-pip install target-s3-jsonl
-deactivate
+~/.virtualenvs/target-s3-jsonl/bin/pip install target-s3-jsonl
 ```
 
 Alternative
 ```bash
 python -m venv ~/.virtualenvs/target-s3-jsonl
-~/.virtualenvs/target-s3-jsonl/bin/pip install target-s3-jsonl
+source ~/.virtualenvs/target-s3-jsonl/bin/activate
+pip install target-s3-jsonl
+deactivate
 ```
 
 ### To run
@@ -83,16 +85,23 @@ For non-profile based authentication set `aws_access_key_id` , `aws_secret_acces
 
 Full list of options in `config.json`:
 
+#### Inherited from `target-core`
+
 | Property                            | Type    | Mandatory? | Description                                                   |
 |-------------------------------------|---------|------------|---------------------------------------------------------------|
-| naming_convention                   | String  |            | (Default: None) Custom naming convention of the s3 key. Replaces tokens `date`, `stream`, and `timestamp` with the appropriate values.<br><br>Supports datetime and other python advanced string formatting e.g. `{stream:_>8}_{timestamp:%Y%m%d_%H%M%S}.json` or `{stream}/{timestamp:%Y}/{timestamp:%m}/{timestamp:%d}/{timestamp:%Y%m%d_%H%M%S_%f}.json`.<br><br>Supports "folders" in s3 keys e.g. `folder/folder2/{stream}/export_date={date}/{timestamp}.json`.<br><br>Honors the `s3_key_prefix`,  if set, by prepending the "filename". E.g. naming_convention = `folder1/my_file.json` and s3_key_prefix = `prefix_` results in `folder1/prefix_my_file.json` |
-| timezone_offset                     | Integer |            | Offset value in hour. Use offset `0` hours is you want the `naming_convention` to use `utc` time zone. The `null` values is used by default. |
-| memory_buffer                       | Integer |            | Memory buffer's size used before storing the data into the temporary file. 64Mb used by default if unspecified. |
-| temp_dir                            | String  |            | (Default: platform-dependent) Directory of temporary JSONL files with RECORD messages. |
+| path_template                   | String  |            | (Default: None) Custom naming convention of the s3 key. Replaces tokens `date`, `stream`, and `timestamp` with the appropriate values.<br><br>Supports datetime and other python advanced string formatting e.g. `{stream:_>8}_{timestamp:%Y%m%d_%H%M%S}.json` or `{stream}/{timestamp:%Y}/{timestamp:%m}/{timestamp:%d}/{timestamp:%Y%m%d_%H%M%S_%f}.json`.<br><br>Supports "folders" in s3 keys e.g. `folder/folder2/{stream}/export_date={date}/{timestamp}.json`.<br><br>Honors the `s3_key_prefix`,  if set, by prepending the "filename". E.g. path_template = `folder1/my_file.json` and s3_key_prefix = `prefix_` results in `folder1/prefix_my_file.json` |
+| timezone_offset                     | Integer |            | Offset value in hour. Use offset `0` hours is you want the `path_template` to use `utc` time zone. The `null` values is used by default. |
+| memory_buffer                       | Integer |            | Memory buffer's size used for non partitioned files before storing the data into the temporary file. 64Mb used by default if unspecified. |
+| file_size                           | Integer |            | File partitinoning by `size_limit`. File parts will be created. The `path_template` must contain a part section for the part number. Example `"path_template": "{stream}_{date_time:%Y%m%d_%H%M%S}_part_{part:0>3}.json"`. |
+| work_dir                            | String  |            | (Default: platform-dependent) Directory of temporary JSONL files with RECORD messages. |
 | compression                         | String  |            | The type of compression to apply before uploading. Supported options are `none` (default), `gzip`, and `lzma`. For gzipped files, the file extension will automatically be changed to `.json.gz` for all files. For `lzma` compression, the file extension will automatically be changed to `.json.xz` for all files. |
-| local                               | Boolean |            | Keep the file in the `temp_dir` directory without uploading the files on `s3`. |
+
+#### Specific For `target-s3-jsonl`
+
+| Property                            | Type    | Mandatory? | Description                                                   |
+|-------------------------------------|---------|------------|---------------------------------------------------------------|
+| local                               | Boolean |            | Keep the file in the `work_dir` directory without uploading the files on `s3`. |
 | s3_bucket                           | String  | Yes        | S3 Bucket name                                                |
-| s3_key_prefix                       | String  |            | (Default: None) A static prefix before the generated S3 key names. |
 | aws_profile                         | String  |            | AWS profile name for profile based authentication. If not provided, `AWS_PROFILE` environment variable will be used. |
 | aws_endpoint_url                    | String  |            | AWS endpoint URL. |
 | aws_access_key_id                   | String  |            | S3 Access Key Id. If not provided, `AWS_ACCESS_KEY_ID` environment variable will be used. |
@@ -104,15 +113,18 @@ Full list of options in `config.json`:
 
 ## Test
 Install the tools
-
 ```bash
 pip install .[test,lint]
 ```
 
 Run pytest
-
 ```bash
 pytest -p no:cacheprovider
+```
+
+## Lint
+```bash
+flake8 --show-source --statistics --count --extend-exclude .virtualenvs
 ```
 
 ## Release

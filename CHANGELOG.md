@@ -1,5 +1,33 @@
 # Change Log
 
+## [2.0.0](https://github.com/ome9ax/target-s3-jsonl/tree/2.0.0) (2022-09-29)
+
+### What's Changed
+⚠️ 🚨 **BREAKING COMPATIBILITY: `Python 3.8` SUPPORT REMOVED** 🚨 ⚠️
+* [target-core] Move the core features and functions in common shared [`target-core`](https://gitlab.com/singer-core/target-core) package by @ome9ax in #35
+
+All the core stream processing functionalities are combined into [`target-core`](https://gitlab.com/singer-core/target-core).
+
+#### [`target-core`](https://gitlab.com/singer-core/target-core) core functionalities
+- The stream processing library is using [`asyncio.to_thread`](https://docs.python.org/3/library/asyncio-task.html?highlight=to_thread#asyncio.to_thread) introduced in **`Python 3.9`**.
+- Better isolation architecture comes now by design between singer stream protocol and output custom processing. This opens for more native processing modularity and flexibility (API, S3, ...).
+- Uses `sys.stdin.buffer` input reader over `sys.stdin` for more efficient input stream management.
+
+#### `target-s3-jsonl` changes
+- version `">=2.0"` developments will continue under **`Python 3.9`** and above.
+- version `"~=1.0"` will keep living under the `legacy-v1` branch.
+- Optimised memory and storage management: files are uploaded asynchronously and deleted on the fly, no longer all at once at the end.
+
+#### Config file updates
+- changes (those will be automatically replaced during the deprecation period for backward compatibility):
+    - `path_template` replaces `naming_convention` (*deprecated*). Few changes as well in the `path_template` syntax:
+        - `{date_time}` replaces `{timestamp}` (*deprecated*).
+        - `{date_time:%Y%m%d}` replaces `{date}` (*deprecated*).
+    - `work_dir` replaces `temp_dir` (*deprecated*).
+- New option `file_size` for file partitioning by size limit. The `path_template` must contain a part section for the part number. Example `"path_template": "{stream}_{date_time:%Y%m%d_%H%M%S}_part_{part:0>3}.json"`.
+
+**Full Changelog**: https://github.com/ome9ax/target-s3-jsonl/compare/1.2.2...2.0.0
+
 ## [1.2.2](https://github.com/ome9ax/target-s3-jsonl/tree/1.2.2) (2022-09-01)
 
 ### What's Changed
@@ -17,7 +45,7 @@
 ## [1.2.0](https://github.com/ome9ax/target-s3-jsonl/tree/1.2.0) (2022-04-11)
 
 ### What's Changed
-* Upgrade version to 1.1.0: changelog by @ome9ax in https://github.com/ome9ax/target-s3-jsonl/pull/33
+* Upgrade version to 1.2.0: changelog by @ome9ax in https://github.com/ome9ax/target-s3-jsonl/pull/33
 * [jsonschema] Remove the deprecated custom exception to Handle `multipleOf` overflow fixed in jsonschema v4.0.0 by @ome9ax in https://github.com/ome9ax/target-s3-jsonl/pull/34
 * [jsonschema] remove validation exception catching by @ome9ax in https://github.com/ome9ax/target-s3-jsonl/pull/36
 * [persist_lines] save_records argument by @ome9ax in https://github.com/ome9ax/target-s3-jsonl/pull/37
