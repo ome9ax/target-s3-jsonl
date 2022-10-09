@@ -1,5 +1,12 @@
 # Change Log
 
+## [2.0.1](https://github.com/ome9ax/target-s3-jsonl/tree/2.0.1) (2022-10-09)
+
+### What's Changed
+* ThreadPoolExecutor concurrent & parallel s3 files upload by @ome9ax in #75
+
+**Full Changelog**: https://github.com/ome9ax/target-s3-jsonl/compare/2.0.0...2.0.1
+
 ## [2.0.0](https://github.com/ome9ax/target-s3-jsonl/tree/2.0.0) (2022-09-29)
 
 ### What's Changed

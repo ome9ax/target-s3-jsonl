@@ -2,7 +2,6 @@
 # Standard library imports
 import sys
 from os import environ
-from asyncio import run
 from copy import deepcopy
 from re import match
 import lzma
@@ -318,11 +317,10 @@ def test_put_object(config):
         {"c_pk": 2, "c_varchar": "2", "c_int": 2, "c_time": "07:15:00"},
         {"c_pk": 3, "c_varchar": "3", "c_int": 3, "c_time": "23:00:03"}]
 
-    run(put_object(
-        config,
+    put_object(
+        config | {'client': client},
         file_metadata,
-        stream_data,
-        client))
+        stream_data)
 
     head = client.head_object(Bucket=config.get('s3_bucket'), Key=file_metadata['relative_path'])
     assert head['ResponseMetadata']['HTTPStatusCode'] == 200
@@ -333,11 +331,10 @@ def test_put_object(config):
     file_metadata = {
         'absolute_path': Path('tests', 'resources', 'messages.json.gz'),
         'relative_path': 'dummy/messages_kms.json.gz'}
-    run(put_object(
-        config | {'encryption_type': 'kms', 'encryption_key': None},
+    put_object(
+        config | {'client': client, 'encryption_type': 'kms', 'encryption_key': None},
         file_metadata,
-        stream_data,
-        client))
+        stream_data)
 
     head = client.head_object(Bucket=config.get('s3_bucket'), Key=file_metadata['relative_path'])
     assert head['ResponseMetadata']['HTTPStatusCode'] == 200
@@ -348,11 +345,10 @@ def test_put_object(config):
     file_metadata = {
         'absolute_path': Path('tests', 'resources', 'messages.json.gz'),
         'relative_path': 'dummy/messages_kms.json.gz'}
-    run(put_object(
-        config | {'encryption_type': 'kms', 'encryption_key': 'xXx'},
+    put_object(
+        config | {'client': client, 'encryption_type': 'kms', 'encryption_key': 'xXx'},
         file_metadata,
-        stream_data,
-        client))
+        stream_data)
 
     head = client.head_object(Bucket=config.get('s3_bucket'), Key=file_metadata['relative_path'])
     assert head['ResponseMetadata']['HTTPStatusCode'] == 200
@@ -361,11 +357,10 @@ def test_put_object(config):
 
     # NOTE: 'dummy' encryption_type
     with raises(Exception):
-        run(put_object(
-            config | {'encryption_type': 'dummy'},
+        put_object(
+            config | {'client': client, 'encryption_type': 'dummy'},
             file_metadata | {'relative_path': 'dummy/messages_dummy.json.gz'},
-            stream_data,
-            client))
+            stream_data)
 
 
 @mock_s3
@@ -384,16 +379,16 @@ def test_upload_file(config, temp_path):
         'absolute_path': temp_file,
         'relative_path': 'dummy/messages.json'}
 
-    run(upload_file(
+    upload_file(
         config | {'local': True, 'client': client, 'remove_file': False},
-        file_metadata))
+        file_metadata)
 
     assert 'Contents' not in client.list_objects_v2(Bucket=config['s3_bucket'], Prefix=file_metadata['relative_path'], MaxKeys=1)
     assert file_metadata['absolute_path'].exists()
 
-    run(upload_file(
+    upload_file(
         config | {'client': client, 'remove_file': False},
-        file_metadata))
+        file_metadata)
 
     head = client.head_object(Bucket=config.get('s3_bucket'), Key=file_metadata['relative_path'])
     assert head['ResponseMetadata']['HTTPStatusCode'] == 200
@@ -404,9 +399,9 @@ def test_upload_file(config, temp_path):
     file_metadata = {
         'absolute_path': temp_file,
         'relative_path': 'dummy/messages_kms.json'}
-    run(upload_file(
+    upload_file(
         config | {'client': client, 'remove_file': False, 'encryption_type': 'kms', 'encryption_key': None},
-        file_metadata))
+        file_metadata)
 
     head = client.head_object(Bucket=config.get('s3_bucket'), Key=file_metadata['relative_path'])
     assert head['ResponseMetadata']['HTTPStatusCode'] == 200
@@ -417,9 +412,9 @@ def test_upload_file(config, temp_path):
     file_metadata = {
         'absolute_path': temp_file,
         'relative_path': 'dummy/messages_kms.json'}
-    run(upload_file(
+    upload_file(
         config | {'client': client, 'encryption_type': 'kms', 'encryption_key': 'xXx'},
-        file_metadata))
+        file_metadata)
 
     head = client.head_object(Bucket=config.get('s3_bucket'), Key=file_metadata['relative_path'])
     assert head['ResponseMetadata']['HTTPStatusCode'] == 200
@@ -430,9 +425,9 @@ def test_upload_file(config, temp_path):
 
     # NOTE: 'dummy' encryption_type
     # with raises(Exception):
-    #     run(upload_file(
+    #     upload_file(
     #         config | {'client': client, 'encryption_type': 'dummy'},
-    #         file_metadata | {'relative_path': 'dummy/messages_dummy.json'}))
+    #         file_metadata | {'relative_path': 'dummy/messages_dummy.json'})
 
 
 def test_config_s3(config_raw):
