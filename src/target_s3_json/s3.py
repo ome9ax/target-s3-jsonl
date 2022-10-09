@@ -6,10 +6,11 @@ import argparse
 import json
 import gzip
 import lzma
-import backoff
 from typing import Callable, Dict, Any, List, TextIO
 from asyncio import to_thread
+from concurrent.futures import ThreadPoolExecutor, Future
 
+import backoff
 from boto3.session import Session
 from botocore.exceptions import ClientError
 from botocore.client import BaseClient
@@ -103,8 +104,8 @@ def create_session(config: Dict) -> Session:
 def get_encryption_args(config: Dict[str, Any]) -> tuple:
     if config.get('encryption_type', 'none').lower() == "none":
         # NOTE: No encryption config (defaults to settings on the bucket):
-        encryption_desc = ''
-        encryption_args = {}
+        encryption_desc: str = ''
+        encryption_args: dict = {}
     elif config.get('encryption_type', 'none').lower() == 'kms':
         if config.get('encryption_key'):
             encryption_desc = " using KMS encryption key ID '{}'".format(config.get('encryption_key'))
@@ -121,42 +122,52 @@ def get_encryption_args(config: Dict[str, Any]) -> tuple:
 
 
 @_retry_pattern()
-async def put_object(config: Dict[str, Any], file_metadata: Dict, stream_data: List, client: BaseClient) -> None:
+def put_object(config: Dict[str, Any], file_metadata: Dict, stream_data: List) -> None:
     encryption_desc, encryption_args = get_encryption_args(config)
 
-    LOGGER.info("Uploading %s to bucket %s at %s%s",
-                str(file_metadata['absolute_path']), config.get('s3_bucket'), file_metadata['relative_path'], encryption_desc)
+    config['client'].put_object(
+        Body=config['open_func'](  # NOTE: stream compression with gzip.compress, lzma.compress
+            b''.join(json.dumps(record, ensure_ascii=False).encode('utf-8') + b'\n' for record in stream_data)),
+        Bucket=config.get('s3_bucket'),
+        Key=file_metadata['relative_path'],
+        **encryption_args.get('ExtraArgs', {}))
 
-    await to_thread(client.put_object,
-                    Body=config['open_func'](  # NOTE: stream compression with gzip.compress, lzma.compress
-                        b''.join(json.dumps(record, ensure_ascii=False).encode('utf-8') + b'\n' for record in stream_data)),
-                    Bucket=config.get('s3_bucket'),
-                    Key=file_metadata['relative_path'],
-                    **encryption_args.get('ExtraArgs', {}))
+    LOGGER.info("%s uploaded to bucket %s at %s%s",
+                file_metadata['absolute_path'].as_posix(), config.get('s3_bucket'), file_metadata['relative_path'], encryption_desc)
 
 
 @_retry_pattern()
-async def upload_file(config: Dict[str, Any], file_metadata: Dict) -> None:
+def upload_file(config: Dict[str, Any], file_metadata: Dict) -> None:
     if not config.get('local', False) and (file_metadata['absolute_path'].stat().st_size if file_metadata['absolute_path'].exists() else 0) > 0:
         encryption_desc, encryption_args = get_encryption_args(config)
 
-        await to_thread(config['client'].upload_file,
-                        str(file_metadata['absolute_path']),
-                        config.get('s3_bucket'),
-                        file_metadata['relative_path'],
-                        **encryption_args)
+        config['client'].upload_file(
+            file_metadata['absolute_path'].as_posix(),
+            config.get('s3_bucket'),
+            file_metadata['relative_path'],
+            **encryption_args)
 
         LOGGER.info('%s uploaded to bucket %s at %s%s',
-                    str(file_metadata['absolute_path']), config.get('s3_bucket'), file_metadata['relative_path'], encryption_desc)
+                    file_metadata['absolute_path'].as_posix(), config.get('s3_bucket'), file_metadata['relative_path'], encryption_desc)
 
         if config.get('remove_file', True):
             # NOTE: Remove the local file(s)
             file_metadata['absolute_path'].unlink()  # missing_ok=False
 
 
+async def upload_thread(config: Dict[str, Any], file_metadata: Dict) -> Future:
+
+    return await to_thread(
+        config['executor'].submit,
+        upload_file,
+        config,
+        file_metadata)
+
+
 def config_s3(config_default: Dict[str, Any], datetime_format: Dict[str, str] = {
         'date_time_format': ':%Y%m%dT%H%M%S',
         'date_format': ':%Y%m%d'}) -> Dict[str, Any]:
+    # NOTE: to_snake = lambda s: '_'.join(findall(r'[A-Z]?[a-z]+|\d+|[A-Z]{1,}(?=[A-Z][a-z]|\W|\d|$)', line)).lower()
 
     if 'temp_dir' in config_default:
         LOGGER.warning('`temp_dir` configuration option is deprecated and support will be removed in the future, use `work_dir` instead.')
@@ -185,11 +196,12 @@ def main(lines: TextIO = sys.stdin) -> None:
     parser.add_argument('-c', '--config', help='Config file', required=True)
     args = parser.parse_args()
     config = file.config_compression(config_file(config_s3(json.loads(Path(args.config).read_text(encoding='utf-8')))))
-    save_s3: Callable = partial(save_json, post_processing=upload_file)
+    save_s3: Callable = partial(save_json, post_processing=upload_thread)
     client: BaseClient = create_session(config).client('s3', **({'endpoint_url': config.get('aws_endpoint_url')}
                                                        if config.get('aws_endpoint_url') else {}))
 
-    Loader(config | {'client': client}, writeline=save_s3).run(lines)
+    with ThreadPoolExecutor() as executor:
+        Loader(config | {'client': client, 'executor': executor}, writeline=save_s3).run(lines)
 
 
 # from io import BytesIO
