@@ -5,7 +5,7 @@ updates:
   - package-ecosystem: pip
     directory: "/"
     schedule:
-      interval: daily
+      interval: monthly
       day: monday
       timezone: Europe/London
     allow:
