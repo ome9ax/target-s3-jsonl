@@ -1,7 +1,7 @@
-from functools import partial
-from os import environ
-from pathlib import Path
 import sys
+from os import environ
+from functools import partial
+from pathlib import Path
 import argparse
 import json
 import gzip
