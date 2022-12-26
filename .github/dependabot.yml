@@ -8,9 +8,9 @@ updates:
       interval: monthly
       day: monday
       timezone: Europe/London
-    allow:
-      # Allow only dependencies in the "Production dependency group"
-      - dependency-type: production
+    # allow:
+    #   # Allow only dependencies in the "Production dependency group"
+    #   - dependency-type: production
     reviewers:
       - ome9ax
     open-pull-requests-limit: 9

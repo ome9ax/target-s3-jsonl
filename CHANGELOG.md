@@ -1,5 +1,13 @@
 # Change Log
 
+## [2.1.0](https://github.com/ome9ax/target-s3-jsonl/tree/2.1.0) (2022-10-09)
+
+### What's Changed
+* `target-core` bump to `0.1.0` by @ome9ax in #75
+    * asynchronous post processing config option
+
+**Full Changelog**: https://github.com/ome9ax/target-s3-jsonl/compare/2.0.1...2.1.0
+
 ## [2.0.1](https://github.com/ome9ax/target-s3-jsonl/tree/2.0.1) (2022-10-09)
 
 ### What's Changed
