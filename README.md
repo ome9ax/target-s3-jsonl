@@ -79,7 +79,7 @@ For non-profile based authentication set `aws_access_key_id` , `aws_secret_acces
 | file_size                           | Integer |            | File partitinoning by `size_limit`. File parts will be created. The `path_template` must contain a part section for the part number. Example `"path_template": "{stream}_{date_time:%Y%m%d_%H%M%S}_part_{part:0>3}.json"`. |
 | compression                         | String  |            | The type of compression to apply before uploading. Supported options are `none` (default), `gzip`, and `lzma`. For gzipped files, the file extension will automatically be changed to `.json.gz` for all files. For `lzma` compression, the file extension will automatically be changed to `.json.xz` for all files. |
 | timezone_offset                     | Integer |            | Offset value in hour. Use offset `0` hours is you want the `path_template` to use `utc` time zone. The `null` values is used by default. |
-| work_dir                            | String  |            | (Default: platform-dependent) Directory of temporary JSONL files with RECORD messages. |
+| work_dir                            | String  |            | (Default: platform-dependent) Directory for temporary JSONL files with RECORD messages. |
 
 #### Specific For `target-s3-jsonl`
 
