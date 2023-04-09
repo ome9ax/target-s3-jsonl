@@ -158,7 +158,7 @@ def upload_file(config: Dict[str, Any], file_metadata: Dict) -> None:
 async def upload_thread(config: Dict[str, Any], file_metadata: Dict) -> Future:
 
     return await to_thread(
-        config['executor'].submit,
+        *([config['executor'].submit] if config.get('thread_pool', True) else []),
         upload_file,
         config,
         file_metadata)
