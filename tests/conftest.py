@@ -25,9 +25,9 @@ def patch_datetime(monkeypatch):
             d: dt = dt.strptime('2022-04-29 07:39:38.321056+01:00', '%Y-%m-%d %H:%M:%S.%f%z')
             return d.astimezone(tz) if tz else d
 
-        @classmethod
-        def utcnow(cls):
-            return cls.now(timezone.utc).replace(tzinfo=None)
+        # @classmethod
+        # def utcnow(cls):
+        #     return cls.now(timezone.utc).replace(tzinfo=None)
 
     monkeypatch.setattr(datetime, 'datetime', mydatetime)
 

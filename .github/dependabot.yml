@@ -14,3 +14,7 @@ updates:
     reviewers:
       - ome9ax
     open-pull-requests-limit: 9
+    groups:
+      python-package:
+        patterns:
+          - "*"

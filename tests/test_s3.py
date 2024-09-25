@@ -142,7 +142,7 @@ def config(patch_datetime, config_raw):
 
     return config_raw | {
         # 'date_time': dt.strptime('2021-08-11 06:39:38.321056+00:00', '%Y-%m-%d %H:%M:%S.%f%z'),
-        'date_time': datetime.datetime.utcnow(),
+        'date_time': datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None),
         'work_path': Path(config_raw['work_dir']),
         'open_func': open
     }
@@ -160,7 +160,7 @@ def config_assume_role(config):
 # @fixture
 # @mock_s3
 # def bucket(config):
-#     conn = boto3.resource('s3', region_name='us-east-1', endpoint_url='https://s3.amazonaws.com')
+#     conn = boto3.resource('s3', region_name='eu-west-1', endpoint_url='https://s3.amazonaws.com')
 #     # We need to create the bucket since this is all in Moto's 'virtual' AWS account
 #     conn.create_bucket(Bucket=config['s3_bucket'])
 #     return conn
@@ -220,11 +220,11 @@ def test_create_client_with_assumed_role(caplog, config_assume_role: dict):
 def test_create_session(aws_credentials, config):
     '''TEST : simple create_session call'''
 
-    conn = boto3.resource('s3', region_name='us-east-1', endpoint_url='https://s3.amazonaws.com')
+    conn = boto3.resource('s3', region_name='eu-west-1', endpoint_url='https://s3.amazonaws.com')
     # We need to create the bucket since this is all in Moto's 'virtual' AWS account
     conn.create_bucket(Bucket=config['s3_bucket'])
 
-    # async with get_session().create_client('s3', region_name='us-east-1', end_point_url=s3_server) as client:
+    # async with get_session().create_client('s3', region_name='eu-west-1', end_point_url=s3_server) as client:
     #     with patch('aiobotocore.AioSession.create_client') as mock:
     #         mock.return_value = client
 
@@ -303,7 +303,7 @@ def test_put_object(config):
     '''TEST : simple put_object call'''
     config |= {'compression': 'gzip', 'open_func': gzip.compress}
 
-    conn = boto3.resource('s3', region_name='us-east-1')
+    conn = boto3.resource('s3', region_name='eu-west-1')
     conn.create_bucket(Bucket=config['s3_bucket'])
 
     client: BaseClient = create_session(config).client('s3')
@@ -367,7 +367,7 @@ def test_put_object(config):
 def test_upload_file(config, temp_path):
     '''TEST : simple upload_file call'''
 
-    conn = boto3.resource('s3', region_name='us-east-1')
+    conn = boto3.resource('s3', region_name='eu-west-1')
     conn.create_bucket(Bucket=config['s3_bucket'])
 
     client: BaseClient = create_session(config).client('s3')
@@ -458,7 +458,7 @@ def test_config_s3(config_raw):
 def test_main(capsys, patch_datetime, patch_sys_stdin, patch_argument_parser, config_raw, state, file_metadata):
     '''TEST : simple main call'''
 
-    conn = boto3.resource('s3', region_name='us-east-1', endpoint_url='https://s3.amazonaws.com')
+    conn = boto3.resource('s3', region_name='eu-west-1', endpoint_url='https://s3.amazonaws.com')
     # We need to create the bucket since this is all in Moto's 'virtual' AWS account
     conn.create_bucket(Bucket=config_raw['s3_bucket'])
 

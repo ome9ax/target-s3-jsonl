@@ -7,8 +7,7 @@ import json
 import gzip
 import lzma
 from typing import Callable, Dict, Any, List, TextIO
-from asyncio import to_thread
-from concurrent.futures import ThreadPoolExecutor, Future
+from asyncio import to_thread, get_running_loop
 
 import backoff
 from boto3.session import Session
@@ -155,13 +154,12 @@ def upload_file(config: Dict[str, Any], file_metadata: Dict) -> None:
             file_metadata['absolute_path'].unlink()  # missing_ok=False
 
 
-async def upload_thread(config: Dict[str, Any], file_metadata: Dict) -> Future:
+async def upload_thread(config: Dict[str, Any], file_metadata: Dict) -> None:
 
-    return await to_thread(
-        *([config['executor'].submit] if config.get('thread_pool', True) else []),
-        upload_file,
-        config,
-        file_metadata)
+    if config.get('pool_executor', True):
+        return await get_running_loop().run_in_executor(None, upload_file, config, file_metadata)
+    else:
+        return await to_thread(upload_file, config, file_metadata)
 
 
 def config_s3(config_default: Dict[str, Any], datetime_format: Dict[str, str] = {
@@ -200,8 +198,7 @@ def main(lines: TextIO = sys.stdin) -> None:
     client: BaseClient = create_session(config).client('s3', **({'endpoint_url': config.get('aws_endpoint_url')}
                                                        if config.get('aws_endpoint_url') else {}))
 
-    with ThreadPoolExecutor() as executor:
-        Loader(config | {'client': client, 'executor': executor}, writeline=save_s3).run(lines)
+    Loader(config | {'client': client}, writeline=save_s3).run(lines)
 
 
 # from io import BytesIO
