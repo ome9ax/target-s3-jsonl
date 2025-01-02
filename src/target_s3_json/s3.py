@@ -141,11 +141,15 @@ def upload_file(config: Dict[str, Any], file_metadata: Dict) -> None:
     if not config.get('local', False) and (file_metadata['absolute_path'].stat().st_size if file_metadata['absolute_path'].exists() else 0) > 0:
         encryption_desc, encryption_args = get_encryption_args(config)
 
-        config['client'].upload_file(
-            file_metadata['absolute_path'].as_posix(),
-            config.get('s3_bucket'),
-            file_metadata['relative_path'],
-            **encryption_args)
+        try:
+            config['client'].upload_file(
+                file_metadata['absolute_path'].as_posix(),
+                config.get('s3_bucket'),
+                file_metadata['relative_path'],
+                **encryption_args)
+        except Exception as e:
+            LOGGER.info(f'Failed to upload file: {file_metadata["relative_path"]} due to error: {e}', exc_info=True)
+            raise
 
         LOGGER.info('%s uploaded to bucket %s at %s%s',
                     file_metadata['absolute_path'].as_posix(), config.get('s3_bucket'), file_metadata['relative_path'], encryption_desc)
